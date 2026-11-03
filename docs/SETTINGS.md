@@ -54,6 +54,7 @@ after `"$defaults"`, for example:
 | `SessionStart` (matcher `compact`) | `session-resume.mjs` | Right after a compaction, finds the session log this conversation wrote to most and puts its last lines back into context, with its path. | If the transcript names no log, it adds nothing. |
 | `ConfigChange` | `config-audit.mjs` | Appends `{time, source, file, cwd, session}` to `~/.claude/logs/config-audit.log` for every change to user, project, local or managed settings, or to a skill file. | Never blocks (always exits 0, writes nothing on bad input). |
 | `PreToolUse` (Edit, Write, MultiEdit, NotebookEdit) + `UserPromptSubmit` | `edit-boundary.mjs` | A prompt line `EDIT-BOUNDARY: <folder>[; <folder>]` saves a per-session fence in `~/.claude/state/edit-boundary/<session>.txt`; edits outside it are denied until `EDIT-BOUNDARY: off`. `~/.claude`, temp and `session-logs/` are always allowed. | No fence file, no effect. Bad input passes. |
+| `Stop` (opt-in: `--only lead-guard`) | `lead-guard.mjs` | Desktop app lead sessions: blocks ending a turn on a note from a session it started or messaged without sending the next step, archiving it, or a line "No next step for <session>: <reason>". Finds children in the desktop session index (`LEAD_GUARD_SESSIONS_DIR` to override). | Blocks once per stop; scheduled runs exempt; no notes, no effect. |
 | `PreToolUse` (Bash) | `rtk hook claude` | Only if RTK is installed: rewrites commands to compress their output. Added after `shell-guard`. | See [OPTIONAL.md](OPTIONAL.md). |
 
 **Why shell-guard repeats the ask rules.** A hook that rewrites commands (RTK) turns `git push origin main` into
@@ -144,3 +145,10 @@ them.
   on GitHub and every connector included. Remove connectors the task doesn't need.
 - To clear a stuck run, stop the session first, then archive it.
 - `log-guard` skips scheduled runs, so a routine never hangs on a logging block.
+
+## Which component owns what
+
+`setup/catalog.json` maps every env key, setting, permission list, hook, script, skill and mod above to one component
+id (a test fails if anything is unowned or owned twice). `node setup/audit.mjs` reports each component's state in your
+`~/.claude`; `node install.mjs --only <ids>` installs just those. Settings you already have are never overwritten, and a
+script you edited is backed up (`*.bak-<time>`) before it is refreshed.

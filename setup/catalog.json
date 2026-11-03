@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "groups": ["Rules", "Settings", "Guard hooks", "Continuity hooks", "Tools", "Skills", "Mods"],
+  "components": [
+    {
+      "id": "rules", "group": "Rules", "title": "Working rules (CLAUDE.md block)", "default": true,
+      "what": "A before/during/after framework for every task (checkable criteria, a named bar, small verified steps, proof from real output, a self-check), plus token economy, a learning loop, session logs, cleanup, living docs and compaction instructions. Installed as one marked block; anything else in your CLAUDE.md stays.",
+      "pros": ["Finished, verified work instead of 'should work'", "Claude decides routine choices and stops only for real forks", "Lessons get saved once instead of re-taught"],
+      "cons": ["About 3.6k tokens on every call (read from cache, so about 0.4k at full price)", "Written in the first person for one owner: change the opening paragraph to your taste", "Overlaps or conflicts with rules you already have"],
+      "cost": "~3.6k cached tokens per call",
+      "parts": { "rules": true }
+    },
+    {
+      "id": "compact-window", "group": "Settings", "title": "Auto-compact at 300k tokens", "default": true,
+      "what": "Sets CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 and keeps auto-compaction on, so a long session compacts at about 268k.",
+      "pros": ["More working room before a compaction (a heavy setup starts near 80k and refills to ~110k after one)", "Fewer compactions, each losing less"],
+      "cons": ["Each call near the limit re-reads more context", "Pointless on a model with a smaller window"],
+      "cost": "More tokens per call late in long sessions; fewer compactions",
+      "parts": { "env": ["CLAUDE_CODE_AUTO_COMPACT_WINDOW"], "keys": ["autoCompactEnabled"] }
+    },
+    {
+      "id": "tool-search", "group": "Settings", "title": "Tool search on", "default": true,
+      "what": "ENABLE_TOOL_SEARCH=true: rarely used tools stay out of the prompt until searched for.",
+      "pros": ["Smaller prompt when many MCP servers or plugins are connected", "Better tool choice past ~30 tools"],
+      "cons": ["One extra search step the first time a deferred tool is needed"],
+      "cost": "Saves tokens when you have many tools",
+      "parts": { "env": ["ENABLE_TOOL_SEARCH"] }
+    },
+    {
+      "id": "subagent-effort", "group": "Settings", "title": "Subagents at medium effort", "default": true,
+      "what": "CLAUDE_CODE_SUBAGENT_EFFORT=medium: subagents think less than the main session.",
+      "pros": ["Subagent runs cost less and finish sooner"],
+      "cons": ["Hard subagent tasks may need a higher effort set per agent"],
+      "cost": "Saves tokens on every subagent",
+      "parts": { "env": ["CLAUDE_CODE_SUBAGENT_EFFORT"] }
+    },
+    {
+      "id": "concise-output", "group": "Settings", "title": "Concise output style", "default": true,
+      "what": "outputStyle=Concise: replies lead with the result, no narration or recaps.",
+      "pros": ["Shorter replies, less to read", "Fewer output tokens (the most expensive kind)"],
+      "cons": ["Less hand-holding; ask for detail when you want it"],
+      "cost": "Saves output tokens",
+      "parts": { "keys": ["outputStyle"] }
+    },
+    {
+      "id": "keep-transcripts", "group": "Settings", "title": "Keep transcripts 90 days", "default": true,
+      "what": "cleanupPeriodDays=90 instead of 30, so cache reports and past-session searches have history.",
+      "pros": ["Older sessions stay searchable and resumable"],
+      "cons": ["Disk use: heavy users write gigabytes of transcripts a month"],
+      "cost": "Disk space only",
+      "parts": { "keys": ["cleanupPeriodDays"] }
+    },
+    {
+      "id": "auto-mode-env", "group": "Settings", "title": "Auto-mode environment", "default": true,
+      "what": "Adds autoMode.environment with the built-in defaults, ready for your own lines (your organisation, protected branches, production services that need your yes).",
+      "pros": ["Auto mode judges risky actions with your context, not just generic rules"],
+      "cons": ["Does nothing until you add your own lines"],
+      "cost": "None",
+      "parts": { "keys": ["autoMode"] }
+    },
+    {
+      "id": "secret-deny", "group": "Settings", "title": "Deny reading secret files", "default": true,
+      "what": "Permission deny rules for ~/.ssh, .env and .env.local.",
+      "pros": ["Keys and passwords never enter the conversation"],
+      "cons": ["You read those files yourself when needed"],
+      "cost": "None",
+      "parts": { "permissions": ["deny"] }
+    },
+    {
+      "id": "risky-ask", "group": "Settings", "title": "Ask before pushes and installs", "default": true,
+      "what": "Permission ask rules for git push, gh pr create, pip install, npm install -g and winget install.",
+      "pros": ["Nothing leaves your machine or lands on it without a yes"],
+      "cons": ["One more prompt each time; drop it if you push many times a day"],
+      "cost": "A prompt per push or install",
+      "parts": { "permissions": ["ask"] }
+    },
+    {
+      "id": "statusline", "group": "Settings", "title": "Status line with cache state", "default": true,
+      "what": "One line under the prompt (terminal): context used, whether the prompt cache is warm and for how many more minutes, hit rate and the last miss's cause.",
+      "pros": ["Shows when a break will cost a full re-cache", "Spots cache-breaking changes as they happen"],
+      "cons": ["Terminal only; replaces a status line you already have only if you have none"],
+      "cost": "None",
+      "parts": { "keys": ["statusLine"], "scripts": ["statusline.mjs"] }
+    },
+    {
+      "id": "shell-guard", "group": "Guard hooks", "title": "Shell guard + ratchet", "default": true,
+      "what": "PreToolUse hook on Bash and PowerShell. Denies commands touching .env, .env.local or ~/.ssh. Asks before pushes, installs, recursive deletes outside build and cache folders, git reset --hard, git clean, force-push, DROP TABLE, Docker prunes and disk formatting. On git commit it runs ratchet.mjs and asks when the diff passes by lowering the bar (new suppressions, skipped tests, stubs, fewer assertions, eased thresholds).",
+      "pros": ["Catches what permission rules miss when another hook rewrites commands", "Stops the classic agent disasters (rm -rf, reset --hard) with a prompt, not after the fact", "Stops 'tests pass' by skipping tests"],
+      "cons": ["~50 ms per shell command", "Occasional prompt on a delete you meant"],
+      "cost": "No context; a node start per shell command",
+      "parts": { "hooks": ["shell-guard.mjs"], "scripts": ["shell-guard.mjs", "ratchet.mjs"] }
+    },
+    {
+      "id": "edit-boundary", "group": "Guard hooks", "title": "Edit boundary for parallel sessions", "default": true,
+      "what": "A message line 'EDIT-BOUNDARY: <folder>' fences that session's Edit and Write to the folder until 'EDIT-BOUNDARY: off'. For two sessions working in one repo.",
+      "pros": ["Parallel sessions can't overwrite each other's files"],
+      "cons": ["Only useful if you run more than one session in a repo", "A hook on every edit and prompt (~30 ms)"],
+      "cost": "No context; a node start per edit",
+      "parts": { "hooks": ["edit-boundary.mjs"], "scripts": ["edit-boundary.mjs"] }
+    },
+    {
+      "id": "config-audit", "group": "Guard hooks", "title": "Config change audit", "default": true,
+      "what": "Logs every change to a settings or skill file (which file, when, which session) to ~/.claude/logs/config-audit.log. Never blocks.",
+      "pros": ["A change you didn't make leaves a trace"],
+      "cons": ["A log file that grows slowly"],
+      "cost": "None",
+      "parts": { "hooks": ["config-audit.mjs"], "scripts": ["config-audit.mjs"] }
+    },
+    {
+      "id": "log-guard", "group": "Continuity hooks", "title": "Session log guard", "default": true,
+      "what": "Stop hook: a turn that made 3+ changes can't end until a session-logs/*.md file was updated in that turn. Pairs with the session-log rule.",
+      "pros": ["Every step is written down, so compaction and restarts lose nothing", "Makes the log rule automatic instead of hoped-for"],
+      "cons": ["Claude spends a few tokens per turn writing the log", "Pointless without the rules (or your own log habit)"],
+      "cost": "~100-300 output tokens per working turn",
+      "parts": { "hooks": ["log-guard.mjs"], "scripts": ["log-guard.mjs"] }
+    },
+    {
+      "id": "session-resume", "group": "Continuity hooks", "title": "Session resume after compaction + log compaction", "default": true,
+      "what": "Right after a compaction, puts the session's own log back into context, and nudges a lossless log compaction once the log passes 40 KB (log-compact.mjs archives it verbatim and checks no path, URL or ID was dropped).",
+      "pros": ["Compaction stops being the moment work gets lost", "Logs stay small enough to re-read"],
+      "cons": ["Re-reads the log's tail (up to ~10k tokens) after each compaction"],
+      "cost": "Up to ~10k tokens per compaction",
+      "parts": { "hooks": ["session-resume.mjs"], "scripts": ["session-resume.mjs", "log-compact.mjs"] }
+    },
+    {
+      "id": "lead-guard", "group": "Continuity hooks", "title": "Lead guard (desktop app, hub sessions)", "default": false,
+      "what": "Stop hook for a lead session that starts and coordinates other sessions in the Claude desktop app: it can't end a turn on a note from one of its sessions without sending the next step, archiving it, or writing 'No next step for <session>: <reason>'.",
+      "pros": ["Child sessions don't sit idle waiting for a lead that forgot them (before it: 10 of 71 'done' notes got a next step)"],
+      "cons": ["Only for the desktop app's session tools; does nothing elsewhere", "Finds children through the desktop session index; set LEAD_GUARD_SESSIONS_DIR if your app keeps it elsewhere"],
+      "cost": "No context; reads the transcript tail at each stop",
+      "parts": { "extraHooks": [{ "event": "Stop", "command": "lead-guard.mjs", "timeout": 10 }], "scripts": ["lead-guard.mjs", "lead-guard.test.py"] }
+    },
+    {
+      "id": "cache-report", "group": "Tools", "title": "cache-report.py", "default": true,
+      "what": "Reads local transcripts and reports prompt-cache hit rate, weighted spend shares, why the cache was rewritten and which sessions cost the most. Needs Python 3.",
+      "pros": ["Shows where tokens actually go before you optimise anything"],
+      "cons": ["Needs Python"],
+      "cost": "None until run",
+      "parts": { "scripts": ["cache-report.py"] }
+    },
+    {
+      "id": "reddit", "group": "Tools", "title": "reddit.py", "default": true,
+      "what": "Read Reddit for research: top, search, thread, through the public Arctic Shift archive (or the official API with your own app keys). Needs Python 3.",
+      "pros": ["Works where browser tools and web search can't reach Reddit"],
+      "cons": ["Archive data lags live Reddit slightly"],
+      "cost": "None until run",
+      "parts": { "scripts": ["reddit.py"] }
+    },
+    {
+      "id": "skill-grilling", "group": "Skills", "title": "grilling", "default": true,
+      "what": "Interviews you relentlessly about a plan until every branch of the decision tree is settled.",
+      "pros": ["Big or fuzzy jobs start from a shared, specific plan"],
+      "cons": ["~60 tokens of description in every session"],
+      "cost": "~60 tokens per session",
+      "parts": { "skills": ["grilling"] }
+    },
+    {
+      "id": "skill-human-voice", "group": "Skills", "title": "human-voice", "default": true,
+      "what": "Writing that reads like one sharp, warm person: point first, specifics, earned wit, plus slop_check.py and quote_check.py scripts that flag AI tells.",
+      "pros": ["Emails, posts and docs that don't read as AI", "Mechanical checks, not just advice"],
+      "cons": ["~120 tokens of description in every session", "Opinionated style"],
+      "cost": "~120 tokens per session",
+      "parts": { "skills": ["human-voice"] }
+    },
+    {
+      "id": "skill-gauntlet-loop", "group": "Skills", "title": "gauntlet-loop", "default": true,
+      "what": "Holds work to a real, named reference with blind critics until ours wins, or a metric mode for jobs with a hard number. Only runs when you type /gauntlet-loop.",
+      "pros": ["The strongest quality loop for work that must beat a known bar"],
+      "cons": ["Runs subagents: expensive, so it's user-invoked only"],
+      "cost": "None until invoked; then high",
+      "parts": { "skills": ["gauntlet-loop"] }
+    },
+    {
+      "id": "skill-after-restart", "group": "Skills", "title": "after-restart (Windows)", "default": true,
+      "what": "After a PC restart, crash or app freeze: finds the cause in the Windows event logs and resumes the sessions that were mid-task.",
+      "pros": ["Turns a crash into a five-minute recovery"],
+      "cons": ["Windows only (PowerShell event logs)"],
+      "cost": "~60 tokens per session",
+      "parts": { "skills": ["after-restart"] }
+    },
+    {
+      "id": "smart-compact", "group": "Mods", "title": "smart-compact mod", "default": false,
+      "what": "A Claude Code mod (plugin). 55 minutes into an idle gap, if context is over 200k, it compacts while the 1-hour prompt cache is still warm, so the next message rewrites ~110k instead of 220k+ (the desktop app has no idle compaction of its own). Also gives the model a compact_after_turn tool for finished-task boundaries over 150k.",
+      "pros": ["Cuts the biggest cache-write cost of long-lived sessions (cold wakes were ~40% of cache writes in our data)"],
+      "cons": ["Compaction drops detail (the session log and Compact instructions limit that)", "A compaction is wasted if you never come back to that session"],
+      "cost": "One summary over a warm cache per idle gap over 200k",
+      "parts": { "plugin": "smart-compact" }
+    },
+    {
+      "id": "email-shield", "group": "Mods", "title": "email-shield mod", "default": false,
+      "what": "Removes the account email Claude Code adds to every prompt (anthropics/claude-code#81138) and blocks any outbound tool call whose input carries it.",
+      "pros": ["Your login email never reaches a web request, MCP server or subagent"],
+      "cons": ["Only matters if your account email shows up in prompts (claude.ai login)"],
+      "cost": "None",
+      "parts": { "plugin": "email-shield" }
+    }
+  ]
+}

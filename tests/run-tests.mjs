@@ -2,7 +2,7 @@
 // Feeds known-bad and known-good cases to every hook, and installs twice into a throwaway home to prove the
 // installer is idempotent. Usage: node tests/run-tests.mjs [--installed]  (--installed tests ~/.claude/scripts)
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +15,11 @@ const check = (name, ok, got) => { ok ? pass++ : fail++; console.log(`${ok ? "PA
 const run = (script, input) => spawnSync("node", [join(SCRIPTS, script)], { input: JSON.stringify(input), encoding: "utf8" });
 const decision = (out) => { try { const j = JSON.parse(out); return j.hookSpecificOutput?.permissionDecision ?? j.decision ?? "?"; } catch { return out ? "?" : "pass"; } };
 
+// --installed tests what is installed: a component you left out is skipped, not failed
+const has = (...fs) => { const miss = fs.filter((f) => !existsSync(join(SCRIPTS, f))); if (miss.length) console.log(`SKIP  ${miss.join(", ")} not installed`); return !miss.length; };
+
 // shell-guard: secrets denied, risky commands asked, normal commands untouched
+if (has("shell-guard.mjs")) {
 const guard = [
   ["cat .env", "deny"], ["type C:\\app\\.env.local", "deny"], ["ls ~/.ssh/", "deny"], ["cat .env.example", "pass"],
   ["git push origin main", "ask"], ["git -C repo push", "ask"], ["gh pr create --fill", "ask"], ["pip install x", "ask"],
@@ -30,8 +34,10 @@ const guard = [
   ["Remove-Item -Recurse \"$env:TEMP\\x\"", "pass"], ["git checkout main", "pass"], ["git reset HEAD file", "pass"],
 ];
 for (const [cmd, want] of guard) { const got = decision(run("shell-guard.mjs", { tool_input: { command: cmd } }).stdout); check(`shell-guard ${want.padEnd(4)} ${cmd}`, got === want, got); }
+}
 
 // ratchet: each bar-lowering change is found; an honest diff is clean; shell-guard asks on a commit that trips it
+if (has("ratchet.mjs", "shell-guard.mjs")) {
 const { scan } = await import(new URL(`file:///${join(SCRIPTS, "ratchet.mjs").replace(/\\/g, "/")}`));
 const d = (path, body, extra = "") => `diff --git a/${path} b/${path}\n${extra}--- a/${path}\n+++ b/${path}\n@@ -1 +1 @@\n${body}\n`;
 const rt = [
@@ -57,8 +63,10 @@ writeFileSync(join(repo, "a.test.ts"), "it.skip('a', () => {});\n"); g("add", ".
 check("shell-guard asks on a commit ratchet flags", decision(run("shell-guard.mjs", { tool_input: { command: "git commit -m x" }, cwd: repo }).stdout) === "ask", "no ask");
 g("reset", "-q", "--hard"); writeFileSync(join(repo, "b.ts"), "export const b = 1;\n"); g("add", ".");
 check("shell-guard passes an honest commit", decision(run("shell-guard.mjs", { tool_input: { command: "git commit -m x" }, cwd: repo }).stdout) === "pass", "asked");
+}
 
 // edit-boundary: a pinned session can't edit outside its folder; session logs, ~/.claude and temp stay open; off lifts it
+if (has("edit-boundary.mjs")) {
 const bh = join(tmp, "bhome"), benv = { ...process.env, USERPROFILE: bh, HOME: bh };
 const eb = (input) => decision(spawnSync("node", [join(SCRIPTS, "edit-boundary.mjs")], { input: JSON.stringify(input), encoding: "utf8", env: benv }).stdout);
 const sid = "s-bound", W2 = (p) => ({ session_id: sid, cwd: "C:/r", hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: p } });
@@ -71,6 +79,7 @@ check("edit-boundary allows session logs", eb(W2("C:/r/session-logs/2026-01-01-x
 check("edit-boundary leaves other sessions alone", eb({ ...W2("C:/r/web/page.tsx"), session_id: "s-other" }) === "pass", "blocked");
 eb({ session_id: sid, cwd: "C:/r", hook_event_name: "UserPromptSubmit", prompt: "EDIT-BOUNDARY: off" });
 check("edit-boundary off lifts it", eb(W2("C:/r/web/page.tsx")) === "pass", "still blocked");
+}
 
 // log-guard: a working turn without a session-log write is blocked once
 const turn = (tools, first = "hello") => {
@@ -85,6 +94,7 @@ const turn = (tools, first = "hello") => {
 };
 const B = ["Bash", { command: "ls" }], W = ["Write", { file_path: "/x/a.txt" }], M = ["mcp__srv__archive_session", {}], R = ["Read", { file_path: "/x" }];
 const LOG = ["Edit", { file_path: "C:\\p\\session-logs\\2026-01-01-x.md" }];
+if (has("log-guard.mjs")) {
 const lg = [
   ["3 changes, no log", { transcript_path: turn([B, W, M]) }, "block"],
   ["3 changes + log edit", { transcript_path: turn([B, W, M, LOG]) }, "pass"],
@@ -93,10 +103,12 @@ const lg = [
   ["scheduled-task run", { transcript_path: turn([B, W, M], "<scheduled-task name=x>") }, "pass"],
 ];
 for (const [name, input, want] of lg) { const got = decision(run("log-guard.mjs", input).stdout); check(`log-guard  ${want.padEnd(5)} ${name}`, got === want, got); }
+}
 
 // session-resume: after compaction, the log the transcript names is put back; nothing named, nothing added
 const proj = join(tmp, "proj"); mkdirSync(join(proj, "session-logs"), { recursive: true });
 writeFileSync(join(proj, "session-logs", "2026-01-01-demo.md"), "# Goal\n- Done: step one\n");
+if (has("session-resume.mjs")) {
 const named = join(tmp, "named.jsonl");
 writeFileSync(named, JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "Edit", input: { file_path: `${proj.replace(/\\/g, "/")}/session-logs/2026-01-01-demo.md` } }] } }));
 const ctx = (p) => { try { return JSON.parse(run("session-resume.mjs", { transcript_path: p, cwd: proj, source: "compact" }).stdout).hookSpecificOutput.additionalContext; } catch { return ""; } };
@@ -105,8 +117,10 @@ check("session-resume silent when none named", ctx(turn([B])) === "", "context")
 check("session-resume no compact nudge for a small log", !ctx(named).includes("Compact it now"), "nudged");
 writeFileSync(join(proj, "session-logs", "2026-01-01-demo.md"), `# Goal\n${"- Done: filler line\n".repeat(2500)}- Done: step one\n`);
 check("session-resume nudges to compact a log over 40 KB", ctx(named).includes("Compact it now"), ctx(named).slice(-80));
+}
 
 // log-compact: archive is verbatim; check fails when a live anchor is dropped and passes when all are kept
+if (has("log-compact.mjs")) {
 const lc = (...a) => spawnSync("node", [join(SCRIPTS, "log-compact.mjs"), ...a], { encoding: "utf8" });
 const clog = join(proj, "session-logs", "2026-01-02-big.md");
 writeFileSync(clog, "- Done: pushed abc1234f to https://example.com/repo; config at C:/work/app/settings.json\n");
@@ -117,8 +131,10 @@ const bad = lc("check", clog, archived);
 check("log-compact check fails on a dropped URL", bad.status === 1 && bad.stdout.includes("https://example.com/repo"), bad.stdout.slice(0, 80));
 writeFileSync(clog, "## Pointers\n- abc1234f https://example.com/repo C:/work/app/settings.json\n");
 check("log-compact check passes when every anchor is kept", lc("check", clog, archived).status === 0, "missing anchors");
+}
 
 // statusline: one line from good, partial and broken input; never crashes
+if (has("statusline.mjs")) {
 const sl = (input) => spawnSync("node", [join(SCRIPTS, "statusline.mjs")], { input: typeof input === "string" ? input : JSON.stringify(input), encoding: "utf8" });
 const full = sl({ context_window: { used_percentage: 41.6 }, prompt_cache: { warm: true, caching_observed: true, ttl: "1h", expires_at: Date.now() / 1000 + 600, hit_ratio: 0.913, last_miss_cause: { causes: ["tools_changed"] } } });
 check("statusline full", full.status === 0 && full.stdout.trim() === "ctx 42% | cache warm 1h, 10m left | hit 91% | last miss: tools_changed", full.stdout.trim());
@@ -128,8 +144,10 @@ const cold = sl({ context_window: { used_percentage: 7 }, prompt_cache: { warm: 
 check("statusline cold cache", cold.stdout.trim() === "ctx 7% | cache cold", cold.stdout.trim());
 const junk = sl("not json{");
 check("statusline survives bad input", junk.status === 0 && junk.stdout.trim() === "ctx ?", junk.stdout.trim() || junk.stderr.slice(0, 80));
+}
 
 // config-audit: each change is one JSON line in <home>/.claude/logs; bad input still exits 0 and writes nothing
+if (has("config-audit.mjs")) {
 const ah = join(tmp, "audit-home"), aenv = { ...process.env, USERPROFILE: ah, HOME: ah };
 const audit = (input) => spawnSync("node", [join(SCRIPTS, "config-audit.mjs")], { input, encoding: "utf8", env: aenv });
 const a1 = audit(JSON.stringify({ source: "project_settings", file_path: "/r/.claude/settings.json", cwd: "/r", session_id: "s1" }));
@@ -138,6 +156,7 @@ let alog = ""; try { alog = readFileSync(join(ah, ".claude", "logs", "config-aud
 const arows = alog.trim().split("\n").filter(Boolean);
 check("config-audit logs one line per change", a1.status === 0 && arows.length === 1 && JSON.parse(arows[0]).source === "project_settings", alog.slice(0, 80));
 check("config-audit never blocks bad input", a2.status === 0 && a2.stdout === "", `exit ${a2.status}`);
+}
 
 // installer: two runs into a fresh home give one block, one copy of each hook, and keep foreign settings
 const home = join(tmp, "home"); mkdirSync(home);
@@ -150,6 +169,71 @@ check("install keeps existing settings", st.theme === "dark" && st.permissions.a
 check("install adds each hook exactly once", count("PreToolUse", "shell-guard") === 1 && count("Stop", "log-guard") === 1 && count("SessionStart", "session-resume") === 1 && count("ConfigChange", "config-audit") === 1, JSON.stringify(st.hooks).slice(0, 120));
 check("install keeps one rules block + own notes", md.split("claude-code-setup:start").length === 2 && md.startsWith("# My own notes"), md.slice(0, 60));
 check("install drops tracker rule when no --tracker", !md.includes("{{TRACKER_FILE}}") && !md.includes("Project tracker"), "tracker text left");
+
+check("install leaves opt-in lead-guard out by default", count("Stop", "lead-guard") === 0, "wired");
+
+// catalog: every script, skill, hook, env key, setting, permission list and mod belongs to exactly one component
+const cat = JSON.parse(readFileSync(join(ROOT, "setup", "catalog.json"), "utf8"));
+const tplJ = JSON.parse(readFileSync(join(ROOT, "claude", "settings.template.json"), "utf8"));
+const shipped = [
+  ...readdirSync(join(ROOT, "claude", "scripts")).map((f) => `scripts:${f}`),
+  ...readdirSync(join(ROOT, "claude", "skills")).map((f) => `skills:${f}`),
+  ...Object.keys(tplJ.env).map((k) => `env:${k}`),
+  ...["outputStyle", "autoCompactEnabled", "cleanupPeriodDays", "statusLine", "autoMode"].map((k) => `keys:${k}`),
+  ...Object.keys(tplJ.permissions).map((k) => `permissions:${k}`),
+  ...Object.values(tplJ.hooks).flat().map((g) => `hooks:${g.hooks[0].command.match(/[\w-]+\.mjs/)[0]}`),
+  ...JSON.parse(readFileSync(join(ROOT, "mods", ".claude-plugin", "marketplace.json"), "utf8")).plugins.map((p) => `plugin:${p.name}`),
+  "rules:true",
+];
+const coverage = (c) => {
+  const owned = c.components.flatMap((x) => Object.entries(x.parts).flatMap(([k, v]) => k === "extraHooks" ? [] : Array.isArray(v) ? v.map((i) => `${k}:${i}`) : [`${k}:${v}`]));
+  return [...new Set(shipped)].filter((x) => owned.filter((o) => o === x).length !== 1);
+};
+check("catalog covers everything shipped, once", coverage(cat).length === 0, coverage(cat).join(", "));
+check("catalog coverage check fails when a component is dropped", coverage({ components: cat.components.filter((x) => x.id !== "log-guard") }).length > 0, "no gap found");
+
+// install --only: exactly the chosen components; an unknown id changes nothing
+const inst = (h, ...a) => spawnSync("node", [join(ROOT, "install.mjs"), "--home", h, "--no-rtk", ...a], { encoding: "utf8" });
+const oh = join(tmp, "only-home"); mkdirSync(oh);
+inst(oh, "--only", "shell-guard,skill-grilling");
+const os1 = JSON.parse(readFileSync(join(oh, "settings.json"), "utf8"));
+check("install --only adds just the chosen hook", JSON.stringify(os1.hooks).includes("shell-guard") && !JSON.stringify(os1).includes("log-guard") && !os1.env && !os1.outputStyle, JSON.stringify(os1).slice(0, 120));
+check("install --only copies just its scripts and skills", readdirSync(join(oh, "scripts")).sort().join() === "ratchet.mjs,shell-guard.mjs" && readdirSync(join(oh, "skills")).join() === "grilling" && !existsSync(join(oh, "CLAUDE.md")), readdirSync(join(oh, "scripts")).join());
+const uh = join(tmp, "unknown-home"); mkdirSync(uh);
+const ur = inst(uh, "--only", "shell-guard,nope");
+check("install --only rejects an unknown id before changing anything", ur.status === 1 && ur.stderr.includes("nope") && readdirSync(uh).length === 0, `exit ${ur.status}`);
+const rf = join(tmp, "my-rules.md"); writeFileSync(rf, "# Trimmed rules\n- Only this one.\n");
+inst(oh, "--only", "rules", "--rules-file", rf);
+check("install --rules-file writes the trimmed block", readFileSync(join(oh, "CLAUDE.md"), "utf8").includes("- Only this one."), "not written");
+
+// audit: read-only statuses on a fake home; never prints the account email
+const aud = (h) => JSON.parse(spawnSync("node", [join(ROOT, "setup", "audit.mjs"), "--home", h, "--json", "--no-tools"], { encoding: "utf8" }).stdout);
+const st0 = (r, id) => r.components.find((c) => c.id === id).status;
+const eh = join(tmp, "empty", ".claude"); mkdirSync(eh, { recursive: true });
+const r0 = aud(eh);
+check("audit: empty home is all missing", r0.components.every((c) => c.status === "missing") && readdirSync(eh).length === 0, r0.components.filter((c) => c.status !== "missing").map((c) => c.id).join());
+const fh = join(tmp, "fake", ".claude"); mkdirSync(fh, { recursive: true });
+inst(fh, "--only", "shell-guard,log-guard,skill-grilling,compact-window");
+writeFileSync(join(fh, "scripts", "log-guard.mjs"), "// my edit\n");
+const fs1 = JSON.parse(readFileSync(join(fh, "settings.json"), "utf8"));
+fs1.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW = "200000";
+fs1.hooks.Stop.push({ hooks: [{ type: "command", command: "node my-own-hook.js" }] });
+writeFileSync(join(fh, "settings.json"), JSON.stringify(fs1));
+rmSync(join(fh, "scripts", "ratchet.mjs"));
+mkdirSync(join(fh, "skills", "my-skill")); writeFileSync(join(fh, "skills", "my-skill", "SKILL.md"), "---\nname: my-skill\n---\n");
+writeFileSync(join(tmp, "fake", ".claude.json"), JSON.stringify({ oauthAccount: { emailAddress: "secret.person@example.test" }, mcpServers: { github: { command: "x" } } }));
+const r1 = aud(fh), raw = JSON.stringify(r1);
+check("audit: installed component", st0(r1, "skill-grilling") === "installed", st0(r1, "skill-grilling"));
+check("audit: edited script is outdated", st0(r1, "log-guard") === "outdated", st0(r1, "log-guard"));
+check("audit: own value is different", st0(r1, "compact-window") === "different", st0(r1, "compact-window"));
+check("audit: one part missing is partial", st0(r1, "shell-guard") === "partial", st0(r1, "shell-guard"));
+check("audit: not chosen is missing", st0(r1, "session-resume") === "missing", st0(r1, "session-resume"));
+check("audit lists your own hooks, skills and MCP servers", r1.yours.hooks.some((h) => h.command.includes("my-own-hook")) && r1.yours.skills.includes("my-skill") && r1.yours.mcpServers.join() === "github", JSON.stringify(r1.yours).slice(0, 120));
+check("audit never prints the account email", !raw.includes("secret.person"), "email leaked");
+rmSync(join(fh, "scripts", "shell-guard.mjs"));
+check("audit: hook without its script is broken", st0(aud(fh), "shell-guard") === "broken", st0(aud(fh), "shell-guard"));
+inst(fh, "--only", "log-guard");
+check("install backs up a script you edited before refreshing it", readdirSync(join(fh, "scripts")).some((f) => f.startsWith("log-guard.mjs.bak-")) && st0(aud(fh), "log-guard") === "installed", readdirSync(join(fh, "scripts")).join());
 
 rmSync(tmp, { recursive: true, force: true });
 console.log(`\n${pass} passed, ${fail} failed`);
