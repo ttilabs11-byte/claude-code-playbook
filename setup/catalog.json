@@ -512,6 +512,56 @@
       "source": "A study of 4,000+ summaries by a much-loved Reddit TL;DR bot; extra checks harvested from hardikpandya/stop-slop and blader/humanizer (METHODS-2026-11-03.md #6)"
     },
     {
+      "id": "skill-wilson-voice",
+      "group": "Skills",
+      "title": "wilson-voice",
+      "default": false,
+      "what": "Witty, warm TL;DRs and short posts in the voice of a much-loved Reddit summary bot: talk to the room, one attitude per joke, a closer with bite, plus its own slop and quote checks.",
+      "pros": [
+        "Summaries of threads, meetings and PR comments that people actually read",
+        "Opener, label and closer banks from real examples"
+      ],
+      "cons": [
+        "~150 tokens of description in every session",
+        "Playful tone; wrong for formal writing"
+      ],
+      "cost": "~150 tokens per session",
+      "parts": {
+        "skills": [
+          "wilson-voice"
+        ]
+      },
+      "replaces": [
+        "generic \"summarise this\" prompts"
+      ],
+      "source": "A study of 4,000+ real summaries by r/ClaudeAI's TL;DR bot (openers, labels, closers, room dynamics); joke structure from Judy Carter (attitude) and Greg Dean (two stories)"
+    },
+    {
+      "id": "skill-youtube-growth",
+      "group": "Skills",
+      "title": "youtube-growth",
+      "default": false,
+      "what": "A working procedure for YouTube and feed growth: find outliers with proven demand, package title and thumbnail as one promise, write a four-P hook, plan a lead magnet and read analytics after publishing.",
+      "pros": [
+        "Checklist before a video or post ships",
+        "Works for LinkedIn, Facebook and Shorts too"
+      ],
+      "cons": [
+        "~150 tokens of description in every session",
+        "Only useful if you publish content"
+      ],
+      "cost": "~150 tokens per session",
+      "parts": {
+        "skills": [
+          "youtube-growth"
+        ]
+      },
+      "replaces": [
+        "ad-hoc idea and title brainstorming"
+      ],
+      "source": "Jake Trinder's public talks on YouTube growth (100+ channels); Eugene Schwartz, Breakthrough Advertising (awareness levels)"
+    },
+    {
       "id": "skill-gauntlet-loop",
       "group": "Skills",
       "title": "gauntlet-loop",
