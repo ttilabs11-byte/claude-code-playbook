@@ -38,7 +38,7 @@
         "spec-kit / OpenSpec CLIs",
         "ECC continuous-learning"
       ],
-      "source": "Anthropic's Claude Code best practices and long-running-harness posts (RESEARCH.md rounds 1-2); essence of superpowers, spec-kit, OpenSpec, Kiro EARS and mattpocock/skills retro (METHODS-2026-11-03.md #4, #5, #8); the learning loop is modelled on Nous Research's Hermes Agent; the end-of-session sweep on an r/ClaudeCode post (68 runs over 14 days)"
+      "source": "Anthropic's Claude Code best practices and long-running-harness posts (RESEARCH.md rounds 1-2); essence of superpowers, spec-kit, OpenSpec, Kiro EARS and mattpocock/skills retro (METHODS-2026-11-03.md #4, #5, #8); the learning loop is modelled on Nous Research's Hermes Agent; the end-of-session sweep on an r/ClaudeCode post (68 runs over 14 days); the judgement-call check (readings, strongest counter-case) from a 'structured-thinker' subagent prompt shared on Reddit (2026-11-03)"
     },
     {
       "id": "compact-window",
