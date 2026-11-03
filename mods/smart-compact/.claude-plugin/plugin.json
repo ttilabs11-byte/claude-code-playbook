@@ -1,0 +1,1 @@
+{ "name": "smart-compact", "version": "0.1.0", "description": "Compacts a big context while the cache is still warm: before an idle gap goes cold, and at a finished task's boundary when the model asks" }

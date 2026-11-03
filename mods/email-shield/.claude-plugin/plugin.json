@@ -1,0 +1,1 @@
+{ "name": "email-shield", "version": "0.1.0", "description": "Keeps the account email out of what Claude reads, and blocks any outbound tool call that carries it" }

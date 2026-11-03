@@ -1,0 +1,19 @@
+{
+  "name": "local-mods",
+  "owner": {
+    "name": "ttilabs11-byte"
+  },
+  "description": "Personal Claude Code mods kept on this PC.",
+  "plugins": [
+    {
+      "name": "email-shield",
+      "source": "./email-shield",
+      "description": "Keeps the account email out of what Claude reads, and blocks any outbound tool call that carries it."
+    },
+    {
+      "name": "smart-compact",
+      "source": "./smart-compact",
+      "description": "Compacts a big context while the cache is still warm: before an idle gap goes cold, and at a finished task's boundary."
+    }
+  ]
+}
