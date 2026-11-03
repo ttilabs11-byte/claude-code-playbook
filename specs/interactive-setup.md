@@ -21,6 +21,10 @@ Status: built 2026-11-03; one open item: a full /playbook run in a fresh session
 - [x] Every script, skill, hook, env key and setting in the repo belongs to exactly one catalog component (a test
       fails otherwise), so the catalog can't drift from what ships.
 - [x] `tests/run-tests.mjs --installed` skips checks for scripts that aren't installed instead of failing them.
+- [x] (2026-11-03) Every own component has `source` and `replaces`; 24 third-party tools (plugins, skills, MCP
+      servers, CLIs) carry url, licence, stars, verdict, why, detect, install and `replacedBy`. The audit detects them
+      (plugin, user or project MCP, skill, CLI on PATH; disabled = partial); `install.mjs --only <third-party id>`
+      exits 1 with the install command; `docs/SOURCES.md` lists every component (tests enforce all of this).
 - [x] The `/playbook` skill runs the audit, compares the user's rules with ours section by section, asks at most 3
       questions about how they work, shows the review, lets them pick per group, shows a dry run, applies only after
       a final yes, runs the tests and reports backups and how to undo.

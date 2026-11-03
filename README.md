@@ -23,6 +23,11 @@ cons and cost; and a recommendation for you. You pick per group, see a dry run, 
 installed, with backups, then tested. Your own hooks, skills and plugins are never touched. Run `/playbook` again
 later to see what changed.
 
+It also checks for 24 popular third-party tools: plugins, skills, MCP servers and CLIs such as RTK, Headroom,
+code-review-graph, Graphify, codebase-memory-mcp, superpowers, caveman and claude-mem. For each one it shows whether
+you have it, our verdict (use, per need, tried and dropped, or skip), why, and which part of the playbook does the same
+job for less context. The playbook never installs them; for the ones worth having it gives you the command.
+
 Just the review, without Claude: `node setup/audit.mjs` (add `--json` for machine-readable output).
 
 ## What you get
@@ -75,7 +80,7 @@ other than `~/.claude`.
 The installer backs up `CLAUDE.md` and `settings.json` (`*.bak-<time>`) before changing them. It merges into your
 settings without removing anything, and keeps its rules between `<!-- claude-code-setup:start/end -->` markers, so
 re-running it updates the block and leaves the rest of your file alone. The tests feed known-bad and known-good cases
-to every hook and install twice into a throwaway folder; 31 checks, all must pass.
+to every hook and install twice into a throwaway folder; 104 checks, all must pass.
 
 ## After installing (by hand, two minutes)
 
@@ -93,6 +98,17 @@ to every hook and install twice into a throwaway folder; 31 checks, all must pas
 6. Optional mods: `node install.mjs --only smart-compact` (and `email-shield` if your account email shows up in
    prompts). It adds this repo's `mods/` as the `playbook-mods` marketplace and installs them for your user. Test with
    `claude plugin test mods/smart-compact`.
+
+## What it replaces, and the research behind it
+
+Each part says where it came from and which popular tools it makes unnecessary: the rules cover superpowers'
+verification and planning habits, andrej-karpathy-skills and planning-with-files; the Concise style covers caveman
+and i-have-adhd; `session-resume` and `log-guard` cover claude-mem and mem0; `shell-guard` covers gstack's `careful`;
+`smart-compact` covers what idle-cache tools like optimaizr hold back. The sources behind it are nine logged research
+rounds (round 9 alone scanned 4,661 items from Hacker News, GitHub, claude-code issues, arXiv and Reddit, and read 36
+in depth), the core files of 27 skill and harness repos, the Claude Code docs and changelog, and our own
+prompt-cache data (98.1% hit rate). Full table, with stars, licences and verdicts:
+[docs/SOURCES.md](docs/SOURCES.md).
 
 ## Will I get the same results?
 
@@ -117,7 +133,7 @@ setup/catalog.json              every component: what it is, pros, cons, cost, d
 setup/audit.mjs                 read-only review of your ~/.claude against the catalog
 .claude/skills/playbook/        the /playbook skill: review, choose, dry run, install, verify
 specs/                          feature specs (interactive-setup.md)
-tests/run-tests.mjs             96 checks: every hook, ratchet, status line, audit and installer, known-bad cases, catalog coverage
+tests/run-tests.mjs             104 checks: every hook, ratchet, status line, audit and installer, known-bad cases, catalog and sources coverage
 claude/CLAUDE.md                global rules
 claude/settings.template.json   settings merged into ~/.claude/settings.json
 claude/scripts/                 shell-guard, log-guard, lead-guard, session-resume, log-compact, config-audit, statusline, ratchet, edit-boundary (.mjs), cache-report.py, reddit.py
@@ -127,6 +143,8 @@ docs/SETTINGS.md                every setting and hook, with the reason; desktop
 docs/LESSONS.md                 traps that cost real time, as rules
 docs/OPTIONAL.md                optional tools (RTK, Headroom, plugins) and what they cost
 docs/RESEARCH.md                research rounds: what changed in Claude Code, what we adopted and why
+docs/SOURCES.md                 where every part came from, what it replaces, verdicts on 24 third-party tools
+docs/METHODS-2026-11-03.md      development methods and harnesses, boiled down to ten small parts of our own
 templates/                      project CLAUDE.md, session log, feature spec, glossary, weekly research task prompt
 ```
 
@@ -140,4 +158,5 @@ and its skills from `~/.claude/skills` (`node setup/audit.mjs` lists which are i
 ## Licence
 
 MIT, except `claude/skills/gauntlet-loop`, which is adapted from robonuggets/gauntlet-loop (Matt Shumer's technique)
-and stays under CC BY 4.0.
+and stays under CC BY 4.0, and `claude/skills/grilling`, copied unchanged from
+[mattpocock/skills](https://github.com/mattpocock/skills) (MIT, Copyright (c) 2026 Matt Pocock; see its `LICENSE`).

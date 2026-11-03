@@ -30,7 +30,9 @@ export const extraGroup = (home, h) => [h.event, { ...(h.matcher ? { matcher: h.
 export function partsFor(ids) {
   const byId = new Map(catalog.components.map((c) => [c.id, c]));
   const unknown = ids.filter((i) => !byId.has(i));
-  if (unknown.length) throw new Error(`unknown component: ${unknown.join(", ")}. Known: ${[...byId.keys()].join(", ")}`);
+  if (unknown.length) throw new Error(`unknown component: ${unknown.join(", ")}. Known: ${[...byId.keys()].filter((k) => !byId.get(k).external).join(", ")}`);
+  const ext = ids.filter((i) => byId.get(i).external);
+  if (ext.length) throw new Error(`third-party, not installed by this playbook: ${ext.map((i) => `${i} (${byId.get(i).external.install ?? `not recommended, see ${byId.get(i).external.url}`})`).join("; ")}`);
   const P = { rules: false, env: new Set(), keys: new Set(), permissions: new Set(), hooks: new Set(), extraHooks: [], scripts: new Set(), skills: new Set(), plugins: [] };
   for (const id of ids) {
     const p = byId.get(id).parts;

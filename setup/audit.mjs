@@ -70,7 +70,20 @@ function verdict(ps) {
   return { status, notes: [...new Set(ps.map((x) => x[1]).filter(Boolean))] };
 }
 
-const components = catalog.components.map((c) => ({ id: c.id, group: c.group, title: c.title, default: c.default, ...verdict(parts(c)) }));
+const userJson = json(join(dirname(HOME), ".claude.json"));
+const mcpServers = Object.keys(userJson?.mcpServers ?? {});
+const projectMcp = new Set(Object.values(userJson?.projects ?? {}).flatMap((p) => Object.keys(p?.mcpServers ?? {})));
+const onPath = (cmd) => spawnSync(process.platform === "win32" ? `where ${cmd}` : `command -v ${cmd}`, { shell: true, stdio: "ignore", timeout: 10000 }).status === 0;
+// third-party tools: found (and where) or not; CLIs are only looked for when tools are checked
+function external(c) {
+  const d = c.external.detect, found = [], list = (v) => [v ?? []].flat();
+  for (const p of list(d.plugin)) { const k = Object.keys(plugins).find((x) => x.startsWith(`${p}@`)); if (k) found.push(plugins[k] ? `plugin ${k}` : `plugin ${k} (disabled)`); }
+  for (const m of list(d.mcp)) if (mcpServers.includes(m) || projectMcp.has(m)) found.push(`MCP server ${m}`);
+  for (const sk of list(d.skill)) if (existsSync(join(HOME, "skills", sk, "SKILL.md"))) found.push(`skill ${sk}`);
+  if (!args.includes("--no-tools")) for (const x of list(d.cli)) if (onPath(x)) found.push(`CLI ${x}`);
+  return { status: !found.length ? "missing" : found.every((f) => f.endsWith("(disabled)")) ? "partial" : "installed", notes: found, verdict: c.external.verdict, replacedBy: c.external.replacedBy };
+}
+const components = catalog.components.map((c) => ({ id: c.id, group: c.group, title: c.title, default: c.default, ...(c.external ? external(c) : verdict(parts(c))) }));
 
 // what you have that the playbook doesn't
 const known = new Set(catalog.components.flatMap((c) => [...(c.parts.scripts ?? []), ...(c.parts.extraHooks ?? []).map((h) => h.command)]).concat("rtk hook"));
@@ -79,10 +92,8 @@ const ownHooks = Object.entries(settings.hooks ?? {}).flatMap(([event, groups]) 
   .map((h) => ({ event, matcher: g.matcher ?? "", command: tidy(h.command ?? h.url ?? h.type).slice(0, 120) }))));
 const ourSkills = new Set(catalog.components.flatMap((c) => c.parts.skills ?? []));
 let ownSkills = []; try { ownSkills = readdirSync(join(HOME, "skills"), { withFileTypes: true }).filter((d) => d.isDirectory() && !ourSkills.has(d.name) && existsSync(join(HOME, "skills", d.name, "SKILL.md"))).map((d) => d.name); } catch {}
-const ourPlugins = new Set(catalog.components.map((c) => c.parts.plugin).filter(Boolean));
+const ourPlugins = new Set(catalog.components.flatMap((c) => [c.parts.plugin, c.external?.detect.plugin].flat()).filter(Boolean));
 const ownPlugins = Object.entries(plugins).filter(([k, v]) => v && !ourPlugins.has(k.split("@")[0])).map(([k]) => k);
-const userJson = json(join(dirname(HOME), ".claude.json"));
-const mcpServers = Object.keys(userJson?.mcpServers ?? {});
 const yours = {
   hooks: ownHooks, skills: ownSkills, plugins: ownPlugins, mcpServers,
   claudeMd: { chars: md.length, approxTokens: Math.round(md.length / 4), hasPlaybookBlock: md.includes(START), hasCompactInstructions: /^#+\s*Compact instructions/im.test(md) },
@@ -98,12 +109,12 @@ const tools = args.includes("--no-tools") ? null : {
 const report = { home: HOME, components, yours, tools };
 if (args.includes("--json")) { console.log(JSON.stringify(report, null, 2)); process.exit(0); }
 
-const count = (s) => components.filter((c) => c.status === s).length;
+const own = components.filter((c) => !c.verdict), count = (s) => own.filter((c) => c.status === s).length;
 console.log(`Claude Code setup review: ${HOME}`);
-console.log(`${count("installed")} installed, ${count("outdated")} outdated, ${count("different")} different, ${count("partial")} partial, ${count("missing")} missing, ${count("broken")} broken (of ${components.length})\n`);
+console.log(`${count("installed")} installed, ${count("outdated")} outdated, ${count("different")} different, ${count("partial")} partial, ${count("missing")} missing, ${count("broken")} broken (of ${own.length}; third-party tools listed separately)\n`);
 for (const g of catalog.groups) {
   console.log(`${g}`);
-  for (const c of components.filter((x) => x.group === g)) console.log(`  ${c.status.padEnd(10)} ${c.id.padEnd(20)} ${c.title}${c.notes.length ? `  [${c.notes.join("; ")}]` : ""}`);
+  for (const c of components.filter((x) => x.group === g)) console.log(`  ${c.status.padEnd(10)} ${c.id.padEnd(20)} ${c.title}${c.verdict ? `  (our verdict: ${c.verdict})` : ""}${c.notes.length ? `  [${c.notes.join("; ")}]` : ""}`);
 }
 console.log(`\nOnly in your setup`);
 console.log(`  hooks:   ${ownHooks.length ? ownHooks.map((h) => `${h.event}${h.matcher ? `(${h.matcher})` : ""}: ${h.command}`).join("\n           ") : "none"}`);

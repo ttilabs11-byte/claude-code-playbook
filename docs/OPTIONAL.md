@@ -20,8 +20,8 @@ every plugin and personal skill adds to every session's context.
 
 - What: a local proxy that compresses requests between Claude Code and the API. Works for terminal sessions that
   point `ANTHROPIC_BASE_URL` at it (`http://127.0.0.1:8787`); the desktop app talks to the API directly.
-- Source: plugin marketplace [chopratejas/headroom](https://github.com/chopratejas/headroom). In Claude Code:
-  `/plugin marketplace add chopratejas/headroom`, then install the `headroom` plugin. Tested with 0.40.0.
+- Source: plugin marketplace [headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom) (formerly chopratejas/headroom). In Claude Code:
+  `/plugin marketplace add headroomlabs-ai/headroom`, then install the `headroom` plugin. Tested with 0.40.0.
 - Check it keeps your cache: a proxy that strips Claude Code's `cache_control` markers bills the whole conversation
   as uncached on every turn, and one that drops the `anthropic-beta` header loses the one-hour TTL. In a terminal that
   uses the proxy, run `claude -p "hello" --output-format json` and read `usage.cache_creation`:

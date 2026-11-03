@@ -14,7 +14,9 @@ repo root (the folder holding `install.mjs`). Never send their files or settings
 1. `node --version` must be 18 or newer; if not, say so and stop.
 2. `node setup/audit.mjs --json`. It reads `~/.claude` and reports each component in `setup/catalog.json` as
    installed, outdated (older or edited copy of ours), different (their own thing under the same name or key),
-   partial, missing or broken; plus what only they have (`yours`) and the tools on the machine.
+   partial, missing or broken; plus what only they have (`yours`) and the tools on the machine. Components with a
+   `verdict` are third-party tools (plugins, skills, MCP servers, CLIs): installed or missing, our verdict, and
+   `replacedBy` (the playbook parts that do the same job). Their `why` and `external.install` are in the catalog.
 3. Rules: read `claude/CLAUDE.md` and their `~/.claude/CLAUDE.md`. Compare section by section: the nine framework
    steps, each "Token economy" bullet, each standing rule (the label before its colon), and "Compact
    instructions". Sort each into: they have an equivalent, theirs conflicts (quote theirs, under 15 words), or missing.
@@ -44,6 +46,12 @@ have current:
 - A "different" item: say what theirs does and what ours adds; default to keeping theirs unless ours fixes a real gap.
 - A "broken" item (a hook pointing at a missing script) is always recommended: it's failing on every call now.
 - Rules: list equivalents (count), conflicts (each one) and what's missing.
+- Third-party tools, one table: | Tool | You have it | Our verdict | Why | Playbook part that covers it |. Lead with
+  any they have that we dropped or skipped and that a playbook part replaces (say what it costs them: tools and hooks
+  that load every session), then tools worth having that they lack. Never tell them to remove anything; say what we
+  found and let them decide.
+- When they ask where an idea came from, or what a part replaces, quote `source` and `replaces` from the catalog;
+  `docs/SOURCES.md` has the full table and the research behind it.
 - Close the review with "Only in your setup": their own hooks, skills, plugins and MCP servers, and that none of it
   will be touched.
 
@@ -57,6 +65,9 @@ have current:
 - Optional tracker rule: only if they want a one-line-per-milestone project log; ask for the file path and pass
   `--tracker <file>`.
 - A "different" skill they choose to replace needs `--force-skills` (it only affects the skills in `--only`).
+- Third-party tools: offer only "use" and "per need" ones they lack, as a last multiSelect question. The installer
+  refuses them; after the final yes in step 5, run each chosen `external.install` command yourself, one at a time,
+  and say they come from another project. Skip any you can't run on their platform and give them the command.
 - A "different" setting value is never overwritten by the installer. If they want ours, edit that one key in
   `~/.claude/settings.json` after a backup and their yes.
 

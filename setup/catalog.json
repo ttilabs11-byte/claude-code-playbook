@@ -1,198 +1,1120 @@
 {
   "version": 1,
-  "groups": ["Rules", "Settings", "Guard hooks", "Continuity hooks", "Tools", "Skills", "Mods"],
+  "groups": [
+    "Rules",
+    "Settings",
+    "Guard hooks",
+    "Continuity hooks",
+    "Tools",
+    "Skills",
+    "Mods",
+    "Third-party tools"
+  ],
   "components": [
     {
-      "id": "rules", "group": "Rules", "title": "Working rules (CLAUDE.md block)", "default": true,
+      "id": "rules",
+      "group": "Rules",
+      "title": "Working rules (CLAUDE.md block)",
+      "default": true,
       "what": "A before/during/after framework for every task (checkable criteria, a named bar, small verified steps, proof from real output, a self-check), plus token economy, a learning loop, session logs, cleanup, living docs and compaction instructions. Installed as one marked block; anything else in your CLAUDE.md stays.",
-      "pros": ["Finished, verified work instead of 'should work'", "Claude decides routine choices and stops only for real forks", "Lessons get saved once instead of re-taught"],
-      "cons": ["About 3.6k tokens on every call (read from cache, so about 0.4k at full price)", "Written in the first person for one owner: change the opening paragraph to your taste", "Overlaps or conflicts with rules you already have"],
+      "pros": [
+        "Finished, verified work instead of 'should work'",
+        "Claude decides routine choices and stops only for real forks",
+        "Lessons get saved once instead of re-taught"
+      ],
+      "cons": [
+        "About 3.6k tokens on every call (read from cache, so about 0.4k at full price)",
+        "Written in the first person for one owner: change the opening paragraph to your taste",
+        "Overlaps or conflicts with rules you already have"
+      ],
       "cost": "~3.6k cached tokens per call",
-      "parts": { "rules": true }
+      "parts": {
+        "rules": true
+      },
+      "replaces": [
+        "superpowers (verification-before-completion, systematic-debugging, writing-plans)",
+        "andrej-karpathy-skills CLAUDE.md",
+        "planning-with-files",
+        "spec-kit / OpenSpec CLIs",
+        "ECC continuous-learning"
+      ],
+      "source": "Anthropic's Claude Code best practices and long-running-harness posts (RESEARCH.md rounds 1-2); essence of superpowers, spec-kit, OpenSpec, Kiro EARS and mattpocock/skills retro (METHODS-2026-11-03.md #4, #5, #8); the learning loop is modelled on Nous Research's Hermes Agent; the end-of-session sweep on an r/ClaudeCode post (68 runs over 14 days)"
     },
     {
-      "id": "compact-window", "group": "Settings", "title": "Auto-compact at 300k tokens", "default": true,
+      "id": "compact-window",
+      "group": "Settings",
+      "title": "Auto-compact at 300k tokens",
+      "default": true,
       "what": "Sets CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 and keeps auto-compaction on, so a long session compacts at about 268k.",
-      "pros": ["More working room before a compaction (a heavy setup starts near 80k and refills to ~110k after one)", "Fewer compactions, each losing less"],
-      "cons": ["Each call near the limit re-reads more context", "Pointless on a model with a smaller window"],
+      "pros": [
+        "More working room before a compaction (a heavy setup starts near 80k and refills to ~110k after one)",
+        "Fewer compactions, each losing less"
+      ],
+      "cons": [
+        "Each call near the limit re-reads more context",
+        "Pointless on a model with a smaller window"
+      ],
       "cost": "More tokens per call late in long sessions; fewer compactions",
-      "parts": { "env": ["CLAUDE_CODE_AUTO_COMPACT_WINDOW"], "keys": ["autoCompactEnabled"] }
+      "parts": {
+        "env": [
+          "CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+        ],
+        "keys": [
+          "autoCompactEnabled"
+        ]
+      },
+      "replaces": [],
+      "source": "Our own measurement: sessions start near 80k and refill to about 110k after compaction, so 250k left ~108k of room and 300k leaves ~158k (RESEARCH.md, Compaction window 2026-11-02); Claude Code settings reference"
     },
     {
-      "id": "tool-search", "group": "Settings", "title": "Tool search on", "default": true,
+      "id": "tool-search",
+      "group": "Settings",
+      "title": "Tool search on",
+      "default": true,
       "what": "ENABLE_TOOL_SEARCH=true: rarely used tools stay out of the prompt until searched for.",
-      "pros": ["Smaller prompt when many MCP servers or plugins are connected", "Better tool choice past ~30 tools"],
-      "cons": ["One extra search step the first time a deferred tool is needed"],
+      "pros": [
+        "Smaller prompt when many MCP servers or plugins are connected",
+        "Better tool choice past ~30 tools"
+      ],
+      "cons": [
+        "One extra search step the first time a deferred tool is needed"
+      ],
       "cost": "Saves tokens when you have many tools",
-      "parts": { "env": ["ENABLE_TOOL_SEARCH"] }
+      "parts": {
+        "env": [
+          "ENABLE_TOOL_SEARCH"
+        ]
+      },
+      "replaces": [
+        "Hand-pruning MCP servers to save context"
+      ],
+      "source": "Claude Code settings reference; on by default since 2.1.304 (changelog)"
     },
     {
-      "id": "subagent-effort", "group": "Settings", "title": "Subagents at medium effort", "default": true,
+      "id": "subagent-effort",
+      "group": "Settings",
+      "title": "Subagents at medium effort",
+      "default": true,
       "what": "CLAUDE_CODE_SUBAGENT_EFFORT=medium: subagents think less than the main session.",
-      "pros": ["Subagent runs cost less and finish sooner"],
-      "cons": ["Hard subagent tasks may need a higher effort set per agent"],
+      "pros": [
+        "Subagent runs cost less and finish sooner"
+      ],
+      "cons": [
+        "Hard subagent tasks may need a higher effort set per agent"
+      ],
       "cost": "Saves tokens on every subagent",
-      "parts": { "env": ["CLAUDE_CODE_SUBAGENT_EFFORT"] }
+      "parts": {
+        "env": [
+          "CLAUDE_CODE_SUBAGENT_EFFORT"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code changelog 2.1.316 (CLAUDE_CODE_SUBAGENT_EFFORT)"
     },
     {
-      "id": "concise-output", "group": "Settings", "title": "Concise output style", "default": true,
+      "id": "concise-output",
+      "group": "Settings",
+      "title": "Concise output style",
+      "default": true,
       "what": "outputStyle=Concise: replies lead with the result, no narration or recaps.",
-      "pros": ["Shorter replies, less to read", "Fewer output tokens (the most expensive kind)"],
-      "cons": ["Less hand-holding; ask for detail when you want it"],
+      "pros": [
+        "Shorter replies, less to read",
+        "Fewer output tokens (the most expensive kind)"
+      ],
+      "cons": [
+        "Less hand-holding; ask for detail when you want it"
+      ],
       "cost": "Saves output tokens",
-      "parts": { "keys": ["outputStyle"] }
+      "parts": {
+        "keys": [
+          "outputStyle"
+        ]
+      },
+      "replaces": [
+        "caveman",
+        "i-have-adhd"
+      ],
+      "source": "Built-in output style. Our cache-report data put output at about 11% of spend, so terse-output plugins buy little, and caveman's style breaks plain writing (our 2026-11-02 setup review)"
     },
     {
-      "id": "keep-transcripts", "group": "Settings", "title": "Keep transcripts 90 days", "default": true,
+      "id": "keep-transcripts",
+      "group": "Settings",
+      "title": "Keep transcripts 90 days",
+      "default": true,
       "what": "cleanupPeriodDays=90 instead of 30, so cache reports and past-session searches have history.",
-      "pros": ["Older sessions stay searchable and resumable"],
-      "cons": ["Disk use: heavy users write gigabytes of transcripts a month"],
+      "pros": [
+        "Older sessions stay searchable and resumable"
+      ],
+      "cons": [
+        "Disk use: heavy users write gigabytes of transcripts a month"
+      ],
       "cost": "Disk space only",
-      "parts": { "keys": ["cleanupPeriodDays"] }
+      "parts": {
+        "keys": [
+          "cleanupPeriodDays"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code settings reference: the default cleanupPeriodDays of 30 deletes transcripts and /rewind snapshots (RESEARCH.md round 5)"
     },
     {
-      "id": "auto-mode-env", "group": "Settings", "title": "Auto-mode environment", "default": true,
+      "id": "auto-mode-env",
+      "group": "Settings",
+      "title": "Auto-mode environment",
+      "default": true,
       "what": "Adds autoMode.environment with the built-in defaults, ready for your own lines (your organisation, protected branches, production services that need your yes).",
-      "pros": ["Auto mode judges risky actions with your context, not just generic rules"],
-      "cons": ["Does nothing until you add your own lines"],
+      "pros": [
+        "Auto mode judges risky actions with your context, not just generic rules"
+      ],
+      "cons": [
+        "Does nothing until you add your own lines"
+      ],
       "cost": "None",
-      "parts": { "keys": ["autoMode"] }
+      "parts": {
+        "keys": [
+          "autoMode"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code auto-mode docs: autoMode is read only from user or managed settings, so a cloned repo can't loosen it (RESEARCH.md round 3)"
     },
     {
-      "id": "secret-deny", "group": "Settings", "title": "Deny reading secret files", "default": true,
+      "id": "secret-deny",
+      "group": "Settings",
+      "title": "Deny reading secret files",
+      "default": true,
       "what": "Permission deny rules for ~/.ssh, .env and .env.local.",
-      "pros": ["Keys and passwords never enter the conversation"],
-      "cons": ["You read those files yourself when needed"],
+      "pros": [
+        "Keys and passwords never enter the conversation"
+      ],
+      "cons": [
+        "You read those files yourself when needed"
+      ],
       "cost": "None",
-      "parts": { "permissions": ["deny"] }
+      "parts": {
+        "permissions": [
+          "deny"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code permissions docs (// absolute paths, ~ home paths)"
     },
     {
-      "id": "risky-ask", "group": "Settings", "title": "Ask before pushes and installs", "default": true,
+      "id": "risky-ask",
+      "group": "Settings",
+      "title": "Ask before pushes and installs",
+      "default": true,
       "what": "Permission ask rules for git push, gh pr create, pip install, npm install -g and winget install.",
-      "pros": ["Nothing leaves your machine or lands on it without a yes"],
-      "cons": ["One more prompt each time; drop it if you push many times a day"],
+      "pros": [
+        "Nothing leaves your machine or lands on it without a yes"
+      ],
+      "cons": [
+        "One more prompt each time; drop it if you push many times a day"
+      ],
       "cost": "A prompt per push or install",
-      "parts": { "permissions": ["ask"] }
+      "parts": {
+        "permissions": [
+          "ask"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code permissions docs"
     },
     {
-      "id": "statusline", "group": "Settings", "title": "Status line with cache state", "default": true,
+      "id": "statusline",
+      "group": "Settings",
+      "title": "Status line with cache state",
+      "default": true,
       "what": "One line under the prompt (terminal): context used, whether the prompt cache is warm and for how many more minutes, hit rate and the last miss's cause.",
-      "pros": ["Shows when a break will cost a full re-cache", "Spots cache-breaking changes as they happen"],
-      "cons": ["Terminal only; replaces a status line you already have only if you have none"],
+      "pros": [
+        "Shows when a break will cost a full re-cache",
+        "Spots cache-breaking changes as they happen"
+      ],
+      "cons": [
+        "Terminal only; replaces a status line you already have only if you have none"
+      ],
       "cost": "None",
-      "parts": { "keys": ["statusLine"], "scripts": ["statusline.mjs"] }
+      "parts": {
+        "keys": [
+          "statusLine"
+        ],
+        "scripts": [
+          "statusline.mjs"
+        ]
+      },
+      "replaces": [],
+      "source": "Claude Code status-line docs; cache minutes left comes from the prompt-caching TTLs (RESEARCH.md round 6)"
     },
     {
-      "id": "shell-guard", "group": "Guard hooks", "title": "Shell guard + ratchet", "default": true,
+      "id": "shell-guard",
+      "group": "Guard hooks",
+      "title": "Shell guard + ratchet",
+      "default": true,
       "what": "PreToolUse hook on Bash and PowerShell. Denies commands touching .env, .env.local or ~/.ssh. Asks before pushes, installs, recursive deletes outside build and cache folders, git reset --hard, git clean, force-push, DROP TABLE, Docker prunes and disk formatting. On git commit it runs ratchet.mjs and asks when the diff passes by lowering the bar (new suppressions, skipped tests, stubs, fewer assertions, eased thresholds).",
-      "pros": ["Catches what permission rules miss when another hook rewrites commands", "Stops the classic agent disasters (rm -rf, reset --hard) with a prompt, not after the fact", "Stops 'tests pass' by skipping tests"],
-      "cons": ["~50 ms per shell command", "Occasional prompt on a delete you meant"],
+      "pros": [
+        "Catches what permission rules miss when another hook rewrites commands",
+        "Stops the classic agent disasters (rm -rf, reset --hard) with a prompt, not after the fact",
+        "Stops 'tests pass' by skipping tests"
+      ],
+      "cons": [
+        "~50 ms per shell command",
+        "Occasional prompt on a delete you meant"
+      ],
       "cost": "No context; a node start per shell command",
-      "parts": { "hooks": ["shell-guard.mjs"], "scripts": ["shell-guard.mjs", "ratchet.mjs"] }
+      "parts": {
+        "hooks": [
+          "shell-guard.mjs"
+        ],
+        "scripts": [
+          "shell-guard.mjs",
+          "ratchet.mjs"
+        ]
+      },
+      "replaces": [
+        "gstack careful (destructive-command guard)",
+        "addyosmani/agent-skills constraint-driven",
+        "oh-my-openagent comment-checker"
+      ],
+      "source": "Hooks guide: parallel PreToolUse answers merge to the strictest, so a hook can hold ask rules that RTK's rewrites slip past (RESEARCH.md round 4); essence of gstack careful, agent-skills and comment-checker (METHODS-2026-11-03.md #2, #3)"
     },
     {
-      "id": "edit-boundary", "group": "Guard hooks", "title": "Edit boundary for parallel sessions", "default": true,
+      "id": "edit-boundary",
+      "group": "Guard hooks",
+      "title": "Edit boundary for parallel sessions",
+      "default": true,
       "what": "A message line 'EDIT-BOUNDARY: <folder>' fences that session's Edit and Write to the folder until 'EDIT-BOUNDARY: off'. For two sessions working in one repo.",
-      "pros": ["Parallel sessions can't overwrite each other's files"],
-      "cons": ["Only useful if you run more than one session in a repo", "A hook on every edit and prompt (~30 ms)"],
+      "pros": [
+        "Parallel sessions can't overwrite each other's files"
+      ],
+      "cons": [
+        "Only useful if you run more than one session in a repo",
+        "A hook on every edit and prompt (~30 ms)"
+      ],
       "cost": "No context; a node start per edit",
-      "parts": { "hooks": ["edit-boundary.mjs"], "scripts": ["edit-boundary.mjs"] }
+      "parts": {
+        "hooks": [
+          "edit-boundary.mjs"
+        ],
+        "scripts": [
+          "edit-boundary.mjs"
+        ]
+      },
+      "replaces": [
+        "gstack freeze"
+      ],
+      "source": "Essence of gstack freeze (METHODS-2026-11-03.md #9), for lead sessions running two children in one repo"
     },
     {
-      "id": "config-audit", "group": "Guard hooks", "title": "Config change audit", "default": true,
+      "id": "config-audit",
+      "group": "Guard hooks",
+      "title": "Config change audit",
+      "default": true,
       "what": "Logs every change to a settings or skill file (which file, when, which session) to ~/.claude/logs/config-audit.log. Never blocks.",
-      "pros": ["A change you didn't make leaves a trace"],
-      "cons": ["A log file that grows slowly"],
+      "pros": [
+        "A change you didn't make leaves a trace"
+      ],
+      "cons": [
+        "A log file that grows slowly"
+      ],
       "cost": "None",
-      "parts": { "hooks": ["config-audit.mjs"], "scripts": ["config-audit.mjs"] }
+      "parts": {
+        "hooks": [
+          "config-audit.mjs"
+        ],
+        "scripts": [
+          "config-audit.mjs"
+        ]
+      },
+      "replaces": [],
+      "source": "ConfigChange hook event (hooks guide)"
     },
     {
-      "id": "log-guard", "group": "Continuity hooks", "title": "Session log guard", "default": true,
+      "id": "log-guard",
+      "group": "Continuity hooks",
+      "title": "Session log guard",
+      "default": true,
       "what": "Stop hook: a turn that made 3+ changes can't end until a session-logs/*.md file was updated in that turn. Pairs with the session-log rule.",
-      "pros": ["Every step is written down, so compaction and restarts lose nothing", "Makes the log rule automatic instead of hoped-for"],
-      "cons": ["Claude spends a few tokens per turn writing the log", "Pointless without the rules (or your own log habit)"],
+      "pros": [
+        "Every step is written down, so compaction and restarts lose nothing",
+        "Makes the log rule automatic instead of hoped-for"
+      ],
+      "cons": [
+        "Claude spends a few tokens per turn writing the log",
+        "Pointless without the rules (or your own log habit)"
+      ],
       "cost": "~100-300 output tokens per working turn",
-      "parts": { "hooks": ["log-guard.mjs"], "scripts": ["log-guard.mjs"] }
+      "parts": {
+        "hooks": [
+          "log-guard.mjs"
+        ],
+        "scripts": [
+          "log-guard.mjs"
+        ]
+      },
+      "replaces": [
+        "planning-with-files",
+        "claude-mem capture-everything memory"
+      ],
+      "source": "Anthropic's long-running-harness post (a progress file the next context reads); our own lost-context incidents after compaction (LESSONS.md, Compaction and continuity)"
     },
     {
-      "id": "session-resume", "group": "Continuity hooks", "title": "Session resume after compaction + log compaction", "default": true,
+      "id": "session-resume",
+      "group": "Continuity hooks",
+      "title": "Session resume after compaction + log compaction",
+      "default": true,
       "what": "Right after a compaction, puts the session's own log back into context, and nudges a lossless log compaction once the log passes 40 KB (log-compact.mjs archives it verbatim and checks no path, URL or ID was dropped).",
-      "pros": ["Compaction stops being the moment work gets lost", "Logs stay small enough to re-read"],
-      "cons": ["Re-reads the log's tail (up to ~10k tokens) after each compaction"],
+      "pros": [
+        "Compaction stops being the moment work gets lost",
+        "Logs stay small enough to re-read"
+      ],
+      "cons": [
+        "Re-reads the log's tail (up to ~10k tokens) after each compaction"
+      ],
       "cost": "Up to ~10k tokens per compaction",
-      "parts": { "hooks": ["session-resume.mjs"], "scripts": ["session-resume.mjs", "log-compact.mjs"] }
+      "parts": {
+        "hooks": [
+          "session-resume.mjs"
+        ],
+        "scripts": [
+          "session-resume.mjs",
+          "log-compact.mjs"
+        ]
+      },
+      "replaces": [
+        "claude-mem",
+        "mem0",
+        "codebase-memory-mcp session memory"
+      ],
+      "source": "Context-window docs: after compaction only five recent files come back and skills are cut to 5,000 tokens (RESEARCH.md round 6)"
     },
     {
-      "id": "lead-guard", "group": "Continuity hooks", "title": "Lead guard (desktop app, hub sessions)", "default": false,
+      "id": "lead-guard",
+      "group": "Continuity hooks",
+      "title": "Lead guard (desktop app, hub sessions)",
+      "default": false,
       "what": "Stop hook for a lead session that starts and coordinates other sessions in the Claude desktop app: it can't end a turn on a note from one of its sessions without sending the next step, archiving it, or writing 'No next step for <session>: <reason>'.",
-      "pros": ["Child sessions don't sit idle waiting for a lead that forgot them (before it: 10 of 71 'done' notes got a next step)"],
-      "cons": ["Only for the desktop app's session tools; does nothing elsewhere", "Finds children through the desktop session index; set LEAD_GUARD_SESSIONS_DIR if your app keeps it elsewhere"],
+      "pros": [
+        "Child sessions don't sit idle waiting for a lead that forgot them (before it: 10 of 71 'done' notes got a next step)"
+      ],
+      "cons": [
+        "Only for the desktop app's session tools; does nothing elsewhere",
+        "Finds children through the desktop session index; set LEAD_GUARD_SESSIONS_DIR if your app keeps it elsewhere"
+      ],
       "cost": "No context; reads the transcript tail at each stop",
-      "parts": { "extraHooks": [{ "event": "Stop", "command": "lead-guard.mjs", "timeout": 10 }], "scripts": ["lead-guard.mjs", "lead-guard.test.py"] }
+      "parts": {
+        "extraHooks": [
+          {
+            "event": "Stop",
+            "command": "lead-guard.mjs",
+            "timeout": 10
+          }
+        ],
+        "scripts": [
+          "lead-guard.mjs",
+          "lead-guard.test.py"
+        ]
+      },
+      "replaces": [],
+      "source": "Our own desktop-app lead and child sessions: notes from children were left unanswered (2026-11-02)"
     },
     {
-      "id": "cache-report", "group": "Tools", "title": "cache-report.py", "default": true,
+      "id": "cache-report",
+      "group": "Tools",
+      "title": "cache-report.py",
+      "default": true,
       "what": "Reads local transcripts and reports prompt-cache hit rate, weighted spend shares, why the cache was rewritten and which sessions cost the most. Needs Python 3.",
-      "pros": ["Shows where tokens actually go before you optimise anything"],
-      "cons": ["Needs Python"],
+      "pros": [
+        "Shows where tokens actually go before you optimise anything"
+      ],
+      "cons": [
+        "Needs Python"
+      ],
       "cost": "None until run",
-      "parts": { "scripts": ["cache-report.py"] }
+      "parts": {
+        "scripts": [
+          "cache-report.py"
+        ]
+      },
+      "replaces": [
+        "optimaizr (token dashboards)",
+        "ccusage-style usage reports"
+      ],
+      "source": "Usage fields in Claude Code transcripts and the prompt-caching docs (cache read, 5-minute and 1-hour writes); baseline 98.1% hit rate on our data 2026-10-29"
     },
     {
-      "id": "reddit", "group": "Tools", "title": "reddit.py", "default": true,
+      "id": "reddit",
+      "group": "Tools",
+      "title": "reddit.py",
+      "default": true,
       "what": "Read Reddit for research: top, search, thread, through the public Arctic Shift archive (or the official API with your own app keys). Needs Python 3.",
-      "pros": ["Works where browser tools and web search can't reach Reddit"],
-      "cons": ["Archive data lags live Reddit slightly"],
+      "pros": [
+        "Works where browser tools and web search can't reach Reddit"
+      ],
+      "cons": [
+        "Archive data lags live Reddit slightly"
+      ],
       "cost": "None until run",
-      "parts": { "scripts": ["reddit.py"] }
+      "parts": {
+        "scripts": [
+          "reddit.py"
+        ]
+      },
+      "replaces": [
+        "reddrix and other Reddit scrapers"
+      ],
+      "source": "Arctic Shift's public Reddit archive API, because WebSearch and browser tools can't reach Reddit"
     },
     {
-      "id": "skill-grilling", "group": "Skills", "title": "grilling", "default": true,
+      "id": "skill-grilling",
+      "group": "Skills",
+      "title": "grilling",
+      "default": true,
       "what": "Interviews you relentlessly about a plan until every branch of the decision tree is settled.",
-      "pros": ["Big or fuzzy jobs start from a shared, specific plan"],
-      "cons": ["~60 tokens of description in every session"],
+      "pros": [
+        "Big or fuzzy jobs start from a shared, specific plan"
+      ],
+      "cons": [
+        "~60 tokens of description in every session"
+      ],
       "cost": "~60 tokens per session",
-      "parts": { "skills": ["grilling"] }
+      "parts": {
+        "skills": [
+          "grilling"
+        ]
+      },
+      "replaces": [],
+      "source": "Matt Pocock's grilling skill from github.com/mattpocock/skills (MIT), copied unchanged; licence in claude/skills/grilling/LICENSE"
     },
     {
-      "id": "skill-human-voice", "group": "Skills", "title": "human-voice", "default": true,
+      "id": "skill-human-voice",
+      "group": "Skills",
+      "title": "human-voice",
+      "default": true,
       "what": "Writing that reads like one sharp, warm person: point first, specifics, earned wit, plus slop_check.py and quote_check.py scripts that flag AI tells.",
-      "pros": ["Emails, posts and docs that don't read as AI", "Mechanical checks, not just advice"],
-      "cons": ["~120 tokens of description in every session", "Opinionated style"],
+      "pros": [
+        "Emails, posts and docs that don't read as AI",
+        "Mechanical checks, not just advice"
+      ],
+      "cons": [
+        "~120 tokens of description in every session",
+        "Opinionated style"
+      ],
       "cost": "~120 tokens per session",
-      "parts": { "skills": ["human-voice"] }
+      "parts": {
+        "skills": [
+          "human-voice"
+        ]
+      },
+      "replaces": [
+        "stop-slop",
+        "humanizer"
+      ],
+      "source": "A study of 4,000+ summaries by a much-loved Reddit TL;DR bot; extra checks harvested from hardikpandya/stop-slop and blader/humanizer (METHODS-2026-11-03.md #6)"
     },
     {
-      "id": "skill-gauntlet-loop", "group": "Skills", "title": "gauntlet-loop", "default": true,
+      "id": "skill-gauntlet-loop",
+      "group": "Skills",
+      "title": "gauntlet-loop",
+      "default": true,
       "what": "Holds work to a real, named reference with blind critics until ours wins, or a metric mode for jobs with a hard number. Only runs when you type /gauntlet-loop.",
-      "pros": ["The strongest quality loop for work that must beat a known bar"],
-      "cons": ["Runs subagents: expensive, so it's user-invoked only"],
+      "pros": [
+        "The strongest quality loop for work that must beat a known bar"
+      ],
+      "cons": [
+        "Runs subagents: expensive, so it's user-invoked only"
+      ],
       "cost": "None until invoked; then high",
-      "parts": { "skills": ["gauntlet-loop"] }
+      "parts": {
+        "skills": [
+          "gauntlet-loop"
+        ]
+      },
+      "replaces": [
+        "autoresearch (metric loop)",
+        "taste-skill (reference plus browser check)"
+      ],
+      "source": "Adapted from robonuggets/gauntlet-loop (CC BY 4.0), Matt Shumer's technique from github.com/mshumer/Claude-of-Duty; Google's Elephant-Goldfish model (Apache-2.0); metric mode from uditgoenka/autoresearch (MIT); Anthropic's harness post on criteria and thresholds"
     },
     {
-      "id": "skill-after-restart", "group": "Skills", "title": "after-restart (Windows)", "default": true,
+      "id": "skill-after-restart",
+      "group": "Skills",
+      "title": "after-restart (Windows)",
+      "default": true,
       "what": "After a PC restart, crash or app freeze: finds the cause in the Windows event logs and resumes the sessions that were mid-task.",
-      "pros": ["Turns a crash into a five-minute recovery"],
-      "cons": ["Windows only (PowerShell event logs)"],
+      "pros": [
+        "Turns a crash into a five-minute recovery"
+      ],
+      "cons": [
+        "Windows only (PowerShell event logs)"
+      ],
       "cost": "~60 tokens per session",
-      "parts": { "skills": ["after-restart"] }
+      "parts": {
+        "skills": [
+          "after-restart"
+        ]
+      },
+      "replaces": [],
+      "source": "Our own Windows crashes: blank-window freezes traced to commit-memory exhaustion (Resource-Exhaustion-Detector event 2004; LESSONS.md, Windows)"
     },
     {
-      "id": "smart-compact", "group": "Mods", "title": "smart-compact mod", "default": false,
+      "id": "smart-compact",
+      "group": "Mods",
+      "title": "smart-compact mod",
+      "default": false,
       "what": "A Claude Code mod (plugin). 55 minutes into an idle gap, if context is over 200k, it compacts while the 1-hour prompt cache is still warm, so the next message rewrites ~110k instead of 220k+ (the desktop app has no idle compaction of its own). Also gives the model a compact_after_turn tool for finished-task boundaries over 150k.",
-      "pros": ["Cuts the biggest cache-write cost of long-lived sessions (cold wakes were ~40% of cache writes in our data)"],
-      "cons": ["Compaction drops detail (the session log and Compact instructions limit that)", "A compaction is wasted if you never come back to that session"],
+      "pros": [
+        "Cuts the biggest cache-write cost of long-lived sessions (cold wakes were ~40% of cache writes in our data)"
+      ],
+      "cons": [
+        "Compaction drops detail (the session log and Compact instructions limit that)",
+        "A compaction is wasted if you never come back to that session"
+      ],
       "cost": "One summary over a warm cache per idle gap over 200k",
-      "parts": { "plugin": "smart-compact" }
+      "parts": {
+        "plugin": "smart-compact"
+      },
+      "replaces": [
+        "optimaizr cache-hold",
+        "manual /compact before breaks"
+      ],
+      "source": "anthropics/claude-code issue #103040 (idle compaction doesn't run in desktop Code-tab sessions); our cache-report data: cold wakes were ~40% of cache writes (our 2026-11-02 setup review)"
     },
     {
-      "id": "email-shield", "group": "Mods", "title": "email-shield mod", "default": false,
+      "id": "email-shield",
+      "group": "Mods",
+      "title": "email-shield mod",
+      "default": false,
       "what": "Removes the account email Claude Code adds to every prompt (anthropics/claude-code#81138) and blocks any outbound tool call whose input carries it.",
-      "pros": ["Your login email never reaches a web request, MCP server or subagent"],
-      "cons": ["Only matters if your account email shows up in prompts (claude.ai login)"],
+      "pros": [
+        "Your login email never reaches a web request, MCP server or subagent"
+      ],
+      "cons": [
+        "Only matters if your account email shows up in prompts (claude.ai login)"
+      ],
       "cost": "None",
-      "parts": { "plugin": "email-shield" }
+      "parts": {
+        "plugin": "email-shield"
+      },
+      "replaces": [],
+      "source": "anthropics/claude-code issue #81138 (the account email is injected into prompts)"
+    },
+    {
+      "id": "rtk",
+      "group": "Third-party tools",
+      "title": "RTK (shell output compression)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/rtk-ai/rtk",
+        "licence": "Apache-2.0",
+        "stars": 85377,
+        "verdict": "use",
+        "detect": {
+          "cli": "rtk"
+        },
+        "install": "winget install rtk-ai.rtk (Windows) | brew install rtk (macOS/Linux)",
+        "replacedBy": []
+      },
+      "what": "Rewrites shell commands so long listings, logs and test output come back compressed, errors kept. `rtk gain` shows the savings.",
+      "why": "Cuts tool-output tokens on every shell call at no context cost. Pair it with shell-guard: its rewrites slip past ask rules.",
+      "parts": {}
+    },
+    {
+      "id": "headroom",
+      "group": "Third-party tools",
+      "title": "Headroom (context compression proxy)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/headroomlabs-ai/headroom",
+        "licence": "Apache-2.0",
+        "stars": 78684,
+        "verdict": "use",
+        "detect": {
+          "plugin": "headroom",
+          "cli": "headroom"
+        },
+        "install": "pip install \"headroom-ai[all]\" then, in Claude Code: /plugin marketplace add headroomlabs-ai/headroom and install headroom",
+        "replacedBy": []
+      },
+      "what": "A local proxy that compresses tool outputs, logs and files before they reach the model.",
+      "why": "Terminal sessions only (the desktop app talks to the API directly). Check it keeps your cache: see docs/OPTIONAL.md.",
+      "parts": {}
+    },
+    {
+      "id": "tokeneconomizer",
+      "group": "Third-party tools",
+      "title": "TokenEconomizer (Microsoft)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/microsoft/TokenEconomizer",
+        "licence": "Apache-2.0",
+        "stars": 4544,
+        "verdict": "per-need",
+        "detect": {
+          "plugin": "tokeneconomizer"
+        },
+        "install": "git clone https://github.com/microsoft/TokenEconomizer, then claude plugin marketplace add <clone path> and claude plugin install tokeneconomizer@tokeneconomizer",
+        "replacedBy": []
+      },
+      "what": "Learns from past runs to prune tools a repo never uses and nudge on loops.",
+      "why": "On trial since 2026-10-31; verdict against cache-report numbers due 2026-11-08. Its tool pruning writes deny rules into .claude/settings.local.json.",
+      "parts": {}
+    },
+    {
+      "id": "code-review-graph",
+      "group": "Third-party tools",
+      "title": "code-review-graph (CLI)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/tirth8205/code-review-graph",
+        "licence": "MIT",
+        "stars": 32570,
+        "verdict": "use",
+        "detect": {
+          "cli": "code-review-graph"
+        },
+        "install": "pip install code-review-graph (or pipx install code-review-graph)",
+        "replacedBy": []
+      },
+      "what": "Builds a local graph of a codebase; `impact` shows the blast radius of a change before you make it.",
+      "why": "Use the CLI (build, impact, update), not its MCP server: the CLI costs no context until you run it.",
+      "parts": {}
+    },
+    {
+      "id": "lsp-plugins",
+      "group": "Third-party tools",
+      "title": "typescript-lsp and pyright-lsp",
+      "default": false,
+      "external": {
+        "url": "https://github.com/anthropics/claude-plugins-official",
+        "licence": "official",
+        "stars": null,
+        "verdict": "use",
+        "detect": {
+          "plugin": [
+            "typescript-lsp",
+            "pyright-lsp"
+          ]
+        },
+        "install": "claude plugin install typescript-lsp@claude-plugins-official (and pyright-lsp@claude-plugins-official)",
+        "replacedBy": []
+      },
+      "what": "Give Claude Code type-aware go-to-definition, references and diagnostics.",
+      "why": "Native LSP is what serena adds through MCP, without the MCP context cost.",
+      "parts": {}
+    },
+    {
+      "id": "official-dev-plugins",
+      "group": "Third-party tools",
+      "title": "feature-dev, claude-security, claude-md-management",
+      "default": false,
+      "external": {
+        "url": "https://github.com/anthropics/claude-plugins-official",
+        "licence": "official",
+        "stars": null,
+        "verdict": "use",
+        "detect": {
+          "plugin": [
+            "feature-dev",
+            "claude-security",
+            "claude-md-management"
+          ]
+        },
+        "install": "claude plugin install <name>@claude-plugins-official",
+        "replacedBy": []
+      },
+      "what": "Anthropic's plugins for guided feature work, security review of a diff and keeping CLAUDE.md lean.",
+      "why": "Load on use; we run /claude-security on every app change before shipping.",
+      "parts": {}
+    },
+    {
+      "id": "context7",
+      "group": "Third-party tools",
+      "title": "Context7 (current library docs)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/upstash/context7",
+        "licence": "MIT",
+        "stars": 64107,
+        "verdict": "per-need",
+        "detect": {
+          "mcp": "context7"
+        },
+        "install": "npx ctx7 setup (or the claude.ai connector)",
+        "replacedBy": []
+      },
+      "what": "Fetches up-to-date docs for a library on demand.",
+      "why": "Useful for fast-moving libraries. With tool search on, its tools cost only their names until used.",
+      "parts": {}
+    },
+    {
+      "id": "impeccable",
+      "group": "Third-party tools",
+      "title": "impeccable (front-end design)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/pbakaus/impeccable",
+        "licence": "Apache-2.0",
+        "stars": 100773,
+        "verdict": "per-need",
+        "detect": {
+          "skill": "impeccable"
+        },
+        "install": "npx impeccable",
+        "replacedBy": []
+      },
+      "what": "Design critique and polish passes for interfaces.",
+      "why": "Pick one design skill: it covers what taste-skill, hallmark and UI/UX Pro Max overlap on.",
+      "parts": {}
+    },
+    {
+      "id": "archify",
+      "group": "Third-party tools",
+      "title": "archify (diagrams)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/tt-a1i/archify",
+        "licence": "Apache-2.0",
+        "stars": 92862,
+        "verdict": "per-need",
+        "detect": {
+          "skill": "archify"
+        },
+        "install": "see the repo README",
+        "replacedBy": []
+      },
+      "what": "Architecture, workflow and sequence diagrams as standalone HTML.",
+      "why": "Only if you draw diagrams.",
+      "parts": {}
+    },
+    {
+      "id": "obsidian-skills",
+      "group": "Third-party tools",
+      "title": "obsidian-skills",
+      "default": false,
+      "external": {
+        "url": "https://github.com/kepano/obsidian-skills",
+        "licence": "MIT",
+        "stars": 50661,
+        "verdict": "per-need",
+        "detect": {
+          "plugin": "obsidian"
+        },
+        "install": "/plugin marketplace add kepano/obsidian-skills, then install obsidian",
+        "replacedBy": []
+      },
+      "what": "Obsidian notes, bases and canvases.",
+      "why": "Only if you keep notes in Obsidian; scope it to the vault folder.",
+      "parts": {}
+    },
+    {
+      "id": "claude-seo",
+      "group": "Third-party tools",
+      "title": "claude-seo",
+      "default": false,
+      "external": {
+        "url": "https://github.com/AgriciDaniel/claude-seo",
+        "licence": "MIT",
+        "stars": 26077,
+        "verdict": "per-need",
+        "detect": {
+          "plugin": "claude-seo"
+        },
+        "install": "/plugin marketplace add AgriciDaniel/claude-seo, then install claude-seo",
+        "replacedBy": []
+      },
+      "what": "SEO audits and plans (26 sub-skills).",
+      "why": "Only for website work; scope it to that project.",
+      "parts": {}
+    },
+    {
+      "id": "graphify",
+      "group": "Third-party tools",
+      "title": "Graphify (codebase knowledge graph)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/Graphify-Labs/graphify",
+        "licence": "Apache-2.0",
+        "stars": 141378,
+        "verdict": "dropped",
+        "detect": {
+          "cli": "graphify"
+        },
+        "install": null,
+        "replacedBy": [
+          "code-review-graph"
+        ]
+      },
+      "what": "Turns a codebase and its docs into a queryable knowledge graph.",
+      "why": "Piloted 2026-10-28 on a real app: answers were off-target. code-review-graph's impact check plus reading the files did better.",
+      "parts": {}
+    },
+    {
+      "id": "codebase-memory-mcp",
+      "group": "Third-party tools",
+      "title": "codebase-memory-mcp",
+      "default": false,
+      "external": {
+        "url": "https://github.com/DeusData/codebase-memory-mcp",
+        "licence": "MIT",
+        "stars": 48030,
+        "verdict": "dropped",
+        "detect": {
+          "mcp": "codebase-memory-mcp",
+          "plugin": "codebase-memory"
+        },
+        "install": null,
+        "replacedBy": [
+          "code-review-graph",
+          "session-resume"
+        ]
+      },
+      "what": "Code knowledge graph and session memory over MCP, with its own hooks.",
+      "why": "Removed for context cost: its tools and hooks load into every session. The blast-radius job is code-review-graph's CLI; continuity is session-resume.",
+      "parts": {}
+    },
+    {
+      "id": "superpowers",
+      "group": "Third-party tools",
+      "title": "superpowers",
+      "default": false,
+      "external": {
+        "url": "https://github.com/obra/superpowers",
+        "licence": "MIT",
+        "stars": 311380,
+        "verdict": "dropped",
+        "detect": {
+          "plugin": "superpowers"
+        },
+        "install": null,
+        "replacedBy": [
+          "rules"
+        ]
+      },
+      "what": "A skills framework: brainstorming, plans, TDD, systematic debugging, verification before completion.",
+      "why": "Removed for context cost; its brainstorming makes you pick an approach before every build. Its best habits are rules here.",
+      "parts": {}
+    },
+    {
+      "id": "mem0",
+      "group": "Third-party tools",
+      "title": "mem0",
+      "default": false,
+      "external": {
+        "url": "https://github.com/mem0ai/mem0",
+        "licence": "Apache-2.0",
+        "stars": 68307,
+        "verdict": "dropped",
+        "detect": {
+          "mcp": "mem0"
+        },
+        "install": null,
+        "replacedBy": [
+          "session-resume",
+          "log-guard"
+        ]
+      },
+      "what": "A memory layer for agents.",
+      "why": "Removed for context cost; a small curated markdown memory with an index was enough.",
+      "parts": {}
+    },
+    {
+      "id": "caveman",
+      "group": "Third-party tools",
+      "title": "caveman",
+      "default": false,
+      "external": {
+        "url": "https://github.com/JuliusBrussee/caveman",
+        "licence": "Apache-2.0",
+        "stars": 117005,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "caveman"
+        },
+        "install": null,
+        "replacedBy": [
+          "concise-output"
+        ]
+      },
+      "what": "Terse-output skill plus proxy.",
+      "why": "Output is about 11% of spend; the Concise output style does this without a proxy, and keeps plain writing.",
+      "parts": {}
+    },
+    {
+      "id": "ponytail",
+      "group": "Third-party tools",
+      "title": "ponytail",
+      "default": false,
+      "external": {
+        "url": "https://github.com/DietrichGebert/ponytail",
+        "licence": "MIT",
+        "stars": 183090,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "ponytail"
+        },
+        "install": null,
+        "replacedBy": [
+          "rules"
+        ]
+      },
+      "what": "Pushes the agent toward the least code that works.",
+      "why": "The rules' 'smallest change that fully works' line does the same with no plugin.",
+      "parts": {}
+    },
+    {
+      "id": "i-have-adhd",
+      "group": "Third-party tools",
+      "title": "i-have-adhd",
+      "default": false,
+      "external": {
+        "url": "https://github.com/ayghri/i-have-adhd",
+        "licence": "MIT",
+        "stars": 59861,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "i-have-adhd"
+        },
+        "install": null,
+        "replacedBy": [
+          "concise-output"
+        ]
+      },
+      "what": "Answer-first output skill.",
+      "why": "The Concise output style and the rules' 'lead with the answer' already do this.",
+      "parts": {}
+    },
+    {
+      "id": "context-mode",
+      "group": "Third-party tools",
+      "title": "context-mode",
+      "default": false,
+      "external": {
+        "url": "https://github.com/mksglu/context-mode",
+        "licence": "see repo",
+        "stars": 33314,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "context-mode"
+        },
+        "install": null,
+        "replacedBy": [
+          "rtk",
+          "headroom"
+        ]
+      },
+      "what": "Sandboxes tool output outside the context window.",
+      "why": "Same job as RTK plus Headroom, which we already run.",
+      "parts": {}
+    },
+    {
+      "id": "claude-mem",
+      "group": "Third-party tools",
+      "title": "claude-mem",
+      "default": false,
+      "external": {
+        "url": "https://github.com/thedotmack/claude-mem",
+        "licence": "Apache-2.0",
+        "stars": 111055,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "claude-mem"
+        },
+        "install": null,
+        "replacedBy": [
+          "session-resume",
+          "log-guard"
+        ]
+      },
+      "what": "Captures everything a session does into a store for later sessions.",
+      "why": "It would touch at most the ~13% of writes that compaction causes; session logs plus session-resume cover continuity, curated.",
+      "parts": {}
+    },
+    {
+      "id": "serena",
+      "group": "Third-party tools",
+      "title": "serena",
+      "default": false,
+      "external": {
+        "url": "https://github.com/oraios/serena",
+        "licence": "see repo",
+        "stars": 31038,
+        "verdict": "skip",
+        "detect": {
+          "mcp": "serena"
+        },
+        "install": null,
+        "replacedBy": [
+          "lsp-plugins"
+        ]
+      },
+      "what": "Semantic code retrieval and editing over MCP (LSP).",
+      "why": "typescript-lsp and pyright-lsp give Claude Code native LSP without the MCP.",
+      "parts": {}
+    },
+    {
+      "id": "repomix",
+      "group": "Third-party tools",
+      "title": "repomix",
+      "default": false,
+      "external": {
+        "url": "https://github.com/yamadashy/repomix",
+        "licence": "MIT",
+        "stars": 29129,
+        "verdict": "skip",
+        "detect": {
+          "cli": "repomix"
+        },
+        "install": null,
+        "replacedBy": []
+      },
+      "what": "Packs a repository into one file for other LLMs.",
+      "why": "Claude Code reads files directly, and packing a repo to send elsewhere breaks confidentiality.",
+      "parts": {}
+    },
+    {
+      "id": "understand-anything",
+      "group": "Third-party tools",
+      "title": "Understand-Anything",
+      "default": false,
+      "external": {
+        "url": "https://github.com/Egonex-AI/Understand-Anything",
+        "licence": "MIT",
+        "stars": 90047,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "understand-anything"
+        },
+        "install": null,
+        "replacedBy": [
+          "code-review-graph"
+        ]
+      },
+      "what": "Interactive knowledge graph of a codebase.",
+      "why": "Same family as Graphify, which answered off-target in our pilot.",
+      "parts": {}
+    },
+    {
+      "id": "open-code-review",
+      "group": "Third-party tools",
+      "title": "open-code-review (Alibaba)",
+      "default": false,
+      "external": {
+        "url": "https://github.com/alibaba/open-code-review",
+        "licence": "Apache-2.0",
+        "stars": 49312,
+        "verdict": "skip",
+        "detect": {
+          "plugin": "open-code-review"
+        },
+        "install": null,
+        "replacedBy": [
+          "official-dev-plugins"
+        ]
+      },
+      "what": "Hybrid code-review pipeline.",
+      "why": "claude-security plus /code-review cover our reviews.",
+      "parts": {}
     }
-  ]
+  ],
+  "checked": "2026-11-03 (stars and licences from the GitHub API)"
 }

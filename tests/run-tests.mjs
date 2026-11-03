@@ -231,6 +231,25 @@ check("audit: not chosen is missing", st0(r1, "session-resume") === "missing", s
 check("audit lists your own hooks, skills and MCP servers", r1.yours.hooks.some((h) => h.command.includes("my-own-hook")) && r1.yours.skills.includes("my-skill") && r1.yours.mcpServers.join() === "github", JSON.stringify(r1.yours).slice(0, 120));
 check("audit never prints the account email", !raw.includes("secret.person"), "email leaked");
 rmSync(join(fh, "scripts", "shell-guard.mjs"));
+// third-party tools: detected where they live, never installed by the playbook; every part says what it replaces and where it came from
+const ownC = cat.components.filter((x) => !x.external), extC = cat.components.filter((x) => x.external);
+check("every component names its source and what it replaces", ownC.every((x) => x.source && Array.isArray(x.replaces)) && extC.every((x) => x.external.url && x.external.verdict && x.why), [...ownC.filter((x) => !x.source), ...extC.filter((x) => !x.why)].map((x) => x.id).join());
+const ids = new Set(cat.components.map((x) => x.id));
+check("every replacedBy names a real component", extC.every((x) => x.external.replacedBy.every((r) => ids.has(r))), extC.filter((x) => !x.external.replacedBy.every((r) => ids.has(r))).map((x) => x.id).join());
+const srcDoc = readFileSync(join(ROOT, "docs", "SOURCES.md"), "utf8");
+check("docs/SOURCES.md covers every component", cat.components.every((x) => srcDoc.includes(`\`${x.id}\``)), cat.components.filter((x) => !srcDoc.includes(`\`${x.id}\``)).map((x) => x.id).join());
+const xr = inst(join(tmp, "x-home"), "--only", "rtk");
+check("install --only refuses a third-party tool and shows how to get it", xr.status === 1 && xr.stderr.includes("winget install rtk-ai.rtk"), xr.stderr.slice(0, 120));
+const xs = JSON.parse(readFileSync(join(fh, "settings.json"), "utf8"));
+xs.enabledPlugins = { "caveman@caveman": true, "ponytail@synced": false };
+writeFileSync(join(fh, "settings.json"), JSON.stringify(xs));
+mkdirSync(join(fh, "skills", "impeccable")); writeFileSync(join(fh, "skills", "impeccable", "SKILL.md"), "x");
+const r2 = aud(fh);
+check("audit finds third-party plugins, skills and MCP servers", st0(r2, "caveman") === "installed" && st0(r2, "impeccable") === "installed" && st0(r2, "serena") === "missing" && st0(r2, "superpowers") === "missing", ["caveman", "impeccable", "serena"].map((i) => st0(r2, i)).join());
+check("audit: a disabled third-party plugin is partial", st0(r2, "ponytail") === "partial", st0(r2, "ponytail"));
+check("audit leaves third-party tools out of your own counts", !r2.yours.plugins.some((p) => p.startsWith("caveman@")), r2.yours.plugins.join());
+writeFileSync(join(tmp, "fake", ".claude.json"), JSON.stringify({ projects: { "/x": { mcpServers: { serena: {} } } } }));
+check("audit finds a project-scope MCP server", st0(aud(fh), "serena") === "installed", st0(aud(fh), "serena"));
 check("audit: hook without its script is broken", st0(aud(fh), "shell-guard") === "broken", st0(aud(fh), "shell-guard"));
 inst(fh, "--only", "log-guard");
 check("install backs up a script you edited before refreshing it", readdirSync(join(fh, "scripts")).some((f) => f.startsWith("log-guard.mjs.bak-")) && st0(aud(fh), "log-guard") === "installed", readdirSync(join(fh, "scripts")).join());
