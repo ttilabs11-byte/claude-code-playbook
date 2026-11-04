@@ -562,6 +562,32 @@
       "source": "Jake Trinder's public talks on YouTube growth (100+ channels); Eugene Schwartz, Breakthrough Advertising (awareness levels)"
     },
     {
+      "id": "skill-motion-arsenal",
+      "group": "Skills",
+      "title": "motion-arsenal",
+      "default": false,
+      "what": "A craft library for videos made in code: a brief template, transitions (in-page, 58 FFmpeg xfade, 120 bundled gl-transitions), camera moves, kinetic type, UI demo mock-ups, easing and spring timing, tested FFmpeg finishing recipes and a render(t) starter kit with a demo.",
+      "pros": [
+        "Every FFmpeg recipe and the kit were run and checked",
+        "Brand-neutral: your style guide supplies the look"
+      ],
+      "cons": [
+        "~200 tokens of description in every session",
+        "248 KB on disk (the bundled shaders are 162 KB)",
+        "Only useful if you make videos"
+      ],
+      "cost": "~200 tokens per session",
+      "parts": {
+        "skills": [
+          "motion-arsenal"
+        ]
+      },
+      "replaces": [
+        "looking up transitions, easing and FFmpeg filters from scratch for each video"
+      ],
+      "source": "Craft studied from a code-trailer brief shared online (the brief shape, not its style); richtabor/agent-skills motion-design (easing and duration tokens); endlessblink/clean-cut-mcp Remotion trailer breakdown (frame counts, springs); editframe motion-design skill; FFmpeg 9.0 docs; 120 shaders bundled from gl-transitions.com (MIT, one BSD-2, one BSD-3; author and licence kept per entry)"
+    },
+    {
       "id": "skill-gauntlet-loop",
       "group": "Skills",
       "title": "gauntlet-loop",

@@ -18,7 +18,7 @@ open the folder in the Code tab) and type:
 ```
 
 Claude reads your `~/.claude` (locally, read-only), asks up to three questions about how you work, and shows a review:
-for each of the 26 components, whether you have it, an older copy, your own version, or nothing; what it does; pros,
+for each of the 27 components, whether you have it, an older copy, your own version, or nothing; what it does; pros,
 cons and cost; and a recommendation for you. You pick per group, see a dry run, say yes, and only your picks are
 installed, with backups, then tested. Your own hooks, skills and plugins are never touched. Run `/playbook` again
 later to see what changed.
@@ -45,7 +45,7 @@ Just the review, without Claude: `node setup/audit.mjs` (add `--json` for machin
 | `config-audit` (ConfigChange hook) | Logs every change to a settings or skill file (which file, when, from which session and folder) to `~/.claude/logs/config-audit.log`, so a change you didn't make leaves a trace. Never blocks. |
 | Status line (terminal) | One line under the prompt: context used, whether the prompt cache is warm and for how many more minutes, the session's cache hit rate and why the last miss happened. Tells you when a break will cost a full re-cache. |
 | Settings | Concise output style, a 300k auto-compact window, tool search on, deny rules for secret files, ask rules for pushes and installs, transcripts kept 90 days instead of 30, auto-mode defaults. |
-| Skills | `grilling` (stress-test a plan), `human-voice` (writing that doesn't read as AI), `gauntlet-loop` (hold work to a named bar with blind critics; you start it with `/gauntlet-loop`, since it runs subagents), `after-restart` (find why the PC or app crashed and resume sessions), `wilson-voice` (witty TL;DRs and short posts), `youtube-growth` (find proven topics, package and judge videos and posts). |
+| Skills | `grilling` (stress-test a plan), `human-voice` (writing that doesn't read as AI), `gauntlet-loop` (hold work to a named bar with blind critics; you start it with `/gauntlet-loop`, since it runs subagents), `after-restart` (find why the PC or app crashed and resume sessions), `wilson-voice` (witty TL;DRs and short posts), `youtube-growth` (find proven topics, package and judge videos and posts), `motion-arsenal` (transitions, camera, type, timing and FFmpeg finishing for videos made in code). |
 | Mods (`mods/`, a local plugin marketplace) | `smart-compact`: compacts a context over 200k tokens 55 minutes into an idle gap, before the 1-hour cache goes cold (the desktop app has no idle compaction), and gives the model a `compact_after_turn` tool for finished-task boundaries over 150k. `email-shield`: keeps the account email out of what the model reads and blocks outbound calls that carry it. |
 | `cache-report.py` | Prompt-cache hit rate, why the cache was rewritten, and which sessions cost the most. Reads local transcripts only. |
 | `reddit.py` | Read Reddit for research: `top`, `search`, `thread` (public Arctic Shift archive; the official API when `REDDIT_CLIENT_ID`/`REDDIT_CLIENT_SECRET` are set). |
@@ -137,7 +137,7 @@ tests/run-tests.mjs             104 checks: every hook, ratchet, status line, au
 claude/CLAUDE.md                global rules
 claude/settings.template.json   settings merged into ~/.claude/settings.json
 claude/scripts/                 shell-guard, log-guard, lead-guard, session-resume, log-compact, config-audit, statusline, ratchet, edit-boundary (.mjs), cache-report.py, reddit.py
-claude/skills/                  after-restart, gauntlet-loop, grilling, human-voice, wilson-voice, youtube-growth
+claude/skills/                  after-restart, gauntlet-loop, grilling, human-voice, wilson-voice, youtube-growth, motion-arsenal
 mods/                           local plugin marketplace: smart-compact, email-shield (each with tests)
 docs/SETTINGS.md                every setting and hook, with the reason; desktop app settings
 docs/LESSONS.md                 traps that cost real time, as rules
@@ -159,4 +159,6 @@ and its skills from `~/.claude/skills` (`node setup/audit.mjs` lists which are i
 
 MIT, except `claude/skills/gauntlet-loop`, which is adapted from robonuggets/gauntlet-loop (Matt Shumer's technique)
 and stays under CC BY 4.0, and `claude/skills/grilling`, copied unchanged from
-[mattpocock/skills](https://github.com/mattpocock/skills) (MIT, Copyright (c) 2026 Matt Pocock; see its `LICENSE`).
+[mattpocock/skills](https://github.com/mattpocock/skills) (MIT, Copyright (c) 2026 Matt Pocock; see its `LICENSE`). `claude/skills/motion-arsenal/templates/trailer-kit/glt-lib.js`
+bundles shaders from [gl-transitions](https://github.com/gl-transitions/gl-transitions), each under its own licence
+(MIT; one BSD-2, one BSD-3), with author and licence kept per entry.

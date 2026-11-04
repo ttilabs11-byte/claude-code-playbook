@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- Proves glt.js: two drawn scenes, one gl-transition. ?name=Dreamy (default). Every transition compiles: ?all shows a
+     contact grid of all 120 at progress 0.5 and lists failures in window.FAILED.
+     Capture: glt-test.html?capture&name=CrossZoom, render(1) -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}#stage{position:relative;width:1920px;height:1080px;overflow:hidden;font-family:sans-serif}canvas{display:block}#out{position:absolute;inset:0}#grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(12,1fr)}</style></head>
+<body><div id="stage"><canvas id="out" width="1920" height="1080"></canvas><div id="grid"></div></div>
+<script src="glt-lib.js"></script><script src="glt.js"></script><script>
+window.FONT = "bold 40px sans-serif"; window.DURATION = 2;
+const q = new URLSearchParams(location.search), NAME = q.get("name") || "Dreamy";
+function scene(w, h, c0, c1, label) { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
+  const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, c0); g.addColorStop(1, c1); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.fillStyle = "rgba(255,255,255,.9)"; x.font = `800 ${h * 0.45}px sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(label, w / 2, h / 2);
+  x.fillStyle = "rgba(255,255,255,.25)"; for (let i = 0; i < 12; i++) x.fillRect(i * w / 12, h * 0.85, w / 24, h * 0.06); return c; }
+if (q.has("all")) {
+  const out = document.getElementById("out"); out.style.display = "none";
+  const A = scene(160, 90, "#0d3b8c", "#38a0ff", "A"), B = scene(160, 90, "#1b1b1f", "#e86a2a", "B"); window.FAILED = [];
+  const work = document.createElement("canvas"); work.width = 160; work.height = 90; const g = GLT(work);
+  for (const n of g.names()) { const img = document.createElement("canvas"); img.width = 160; img.height = 90; img.title = n;
+    try { g.draw(n, A, B, 0.5); img.getContext("2d").drawImage(work, 0, 0); } catch (e) { FAILED.push(n + ": " + String(e).slice(0, 120)); }
+    document.getElementById("grid").appendChild(img); }
+  window.render = () => {};
+} else {
+  const A = scene(1920, 1080, "#0d3b8c", "#38a0ff", "A"), B = scene(1920, 1080, "#1b1b1f", "#e86a2a", "B"), g = GLT(document.getElementById("out"));
+  window.render = t => g.draw(NAME, A, B, t / DURATION);
+}
+</script></body></html>

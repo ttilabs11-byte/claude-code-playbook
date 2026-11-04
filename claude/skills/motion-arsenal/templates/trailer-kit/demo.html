@@ -1,0 +1,165 @@
+<!doctype html>
+<!-- motion-arsenal demo: 12 s, 1920x1080, every value a pure function of t. Shows: shatter + shockwave + flash hook,
+     spring wheel entrance, rolling-digit counter, selection jumps, blur-swap scene changes, masked word reveal,
+     underline draw, world switch (blue -> light), 3D carousel with label roll, spring logo pop, grain, vignette.
+     Preview: open in a browser (space = pause). Render: any frame capture that calls render(t) per frame -->
+<html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+  /* THEME: swap these per brand (your brand rules). Techniques below never depend on the values. */
+  :root{--bg:#1D4FF0;--glow:#4F7BFF;--light:#F3F3F0;--light-hi:#F7F7F4;--light-lo:#DCDCD6;--ink:#0A090B;--panel:#121214;--line:#2A2A2E;--sel:#3A3A40;--accent:#2546E8;--muted:#9a9aa3;--display:"Unbounded";--ui:"Inter"}
+  html,body{margin:0;background:#000;overflow:hidden}
+  #stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;font-family:var(--ui),sans-serif;color:#fff}
+  .layer{position:absolute;inset:0}
+  .center{position:absolute;left:50%;top:50%}
+  .k-mask{display:inline-block;overflow:hidden;vertical-align:bottom;line-height:1.08;padding-bottom:.04em}
+  .k-word{display:inline-block;will-change:transform}
+  .k-digit{height:1em;line-height:1em}
+  .k-col{display:block;line-height:1em}
+  #blue{background:var(--bg)}
+  .cloud{position:absolute;width:900px;height:900px;border-radius:50%;background:var(--glow);filter:blur(140px);opacity:.75}
+  #light{background:radial-gradient(ellipse at 50% 45%,var(--light-hi) 0%,var(--light) 55%,var(--light-lo) 100%)}
+  
+  .disp{font-family:var(--display),sans-serif;font-weight:800;letter-spacing:-.035em}
+  #counter{font-size:180px;line-height:1;display:flex;align-items:baseline;gap:18px}
+  #counter small{font-size:56px;opacity:.6;font-weight:700}
+  #title1{font-size:140px;white-space:nowrap}
+  #title2{font-size:80px;white-space:nowrap;opacity:.92}
+  #uline{height:10px;background:#fff;border-radius:5px;transform-origin:0 50%}
+  .card{position:absolute;left:50%;top:50%;width:520px;height:340px;margin:-170px 0 0 -260px;border-radius:18px;background:var(--panel);border:1px solid var(--line);box-shadow:0 40px 80px rgba(0,0,0,.25);overflow:hidden}
+  .card .bar{height:44px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;padding:0 16px}
+  .card .bar i{width:11px;height:11px;border-radius:50%;background:var(--sel)}
+  .card .body{padding:28px;font-size:30px;font-weight:600;color:#fff}
+  .card .body p{margin:14px 0 0;font-weight:400;font-size:20px;color:var(--muted)}
+  .card .key{position:absolute;bottom:0;left:0;right:0;height:40px;border-top:1px solid var(--line);font-size:15px;color:var(--muted);display:flex;align-items:center;padding:0 16px}
+  #label{color:var(--ink);font-size:46px;font-weight:600;letter-spacing:-.01em}
+  #pill{padding:22px 46px;border-radius:999px;background:#fff;color:var(--bg);font-weight:600;font-size:30px;white-space:nowrap}
+  #flash{background:#fff;pointer-events:none}
+  #grain{pointer-events:none;mix-blend-mode:overlay;opacity:.08}
+</style></head><body>
+<div id="stage">
+  <div id="blue" class="layer">
+    <div class="cloud" id="c1"></div><div class="cloud" id="c2"></div><div class="cloud" id="c3"></div>
+  </div>
+  <div id="light" class="layer" style="opacity:0"></div>
+
+  <!-- wheel (blue world) -->
+  <div id="wheelWrap" class="layer"><svg id="wheel" class="center" width="560" height="560" viewBox="-280 -280 560 560" style="margin:-280px 0 0 -280px;overflow:visible"></svg></div>
+  <svg id="shards" class="layer" viewBox="-960 -540 1920 1080" style="overflow:visible"></svg>
+  <svg id="ring" class="layer" viewBox="-960 -540 1920 1080"><circle id="ringC" r="0" fill="none" stroke="#fff"/></svg>
+
+  <div id="counterWrap" class="center" style="margin:-90px 0 0 380px"><div id="counter" class="disp"><span id="digits"></span><small>/16</small></div></div>
+
+  <div id="titleWrap" class="layer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+    <div id="title1" class="disp">Every move</div>
+    <div id="title2" class="disp">in one kit</div>
+    <div id="uline" style="width:820px;margin-top:22px"></div>
+  </div>
+
+  <div id="carousel" class="layer" style="perspective:1600px"></div>
+  <div id="labelWrap" class="center" style="margin:250px 0 0 -400px;width:800px;text-align:center"><span id="label"></span></div>
+
+  <div id="endWrap" class="layer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px">
+    <svg id="logo" width="150" height="150" viewBox="-75 -75 150 150"><circle r="70" style="fill:var(--ink)"/><circle r="34" fill="none" style="stroke:var(--accent)" stroke-width="12"/><circle r="10" fill="#fff"/></svg>
+    <div id="endTitle" class="disp" style="font-size:130px">Arsenal</div>
+    <div id="endTag" style="font-size:40px;font-weight:500;opacity:.85">Transitions, camera, type and finish in one place.</div>
+    <div id="pill">Open the kit</div>
+  </div>
+
+  <div id="flash" class="layer" style="opacity:0"></div>
+  <svg id="grain" class="layer" width="1920" height="1080"><filter id="gf"><feTurbulence id="turb" type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="1"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#gf)"/></svg>
+</div>
+<script src="kit.js"></script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const { $, set, ease, prog, mix, clamp, spring, springs, key, blurSwap, revealWords, rollDigits, shatter, shock, flash, carousel, handheld, grainSeed } = K;
+window.FONT = `800 140px ${css("--display")}`; window.FONTS = [`700 56px ${css("--display")}`, `600 30px ${css("--ui")}`, `400 20px ${css("--ui")}`];
+const DUR = 12, N = 8, SHATTER = 0.45;
+const NS = "http://www.w3.org/2000/svg", mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+
+// wheel: matte disc, 8 hairline segments, centre ring, selected segment fill + underline bar
+const W = $("wheel"), segs = [];
+const arc = (r0, r1, a0, a1) => { const p = (r, a) => `${(r * Math.cos(a)).toFixed(1)} ${(r * Math.sin(a)).toFixed(1)}`; return `M${p(r0, a0)} L${p(r1, a0)} A${r1} ${r1} 0 0 1 ${p(r1, a1)} L${p(r0, a1)} A${r0} ${r0} 0 0 0 ${p(r0, a0)}Z`; };
+mk("circle", { r: 262, fill: css("--ink") }, W); mk("circle", { r: 255, fill: "none", stroke: css("--panel"), "stroke-width": 6 }, W);
+for (let i = 0; i < N; i++) {
+  const a0 = (i / N - 0.5 / N) * Math.PI * 2 - Math.PI / 2, a1 = a0 + Math.PI * 2 / N;
+  const g = mk("g", {}, W);
+  const f = mk("path", { d: arc(70, 250, a0 + 0.012, a1 - 0.012), fill: css("--sel"), opacity: 0 }, g);
+  mk("line", { x1: 70 * Math.cos(a0), y1: 70 * Math.sin(a0), x2: 250 * Math.cos(a0), y2: 250 * Math.sin(a0), stroke: css("--line"), "stroke-width": 1 }, g);
+  const am = (a0 + a1) / 2, cx = 165 * Math.cos(am), cy = 165 * Math.sin(am);
+  mk("rect", { x: cx - 22, y: cy - 14, width: 44, height: 28, rx: 6, fill: "none", stroke: "#fff", "stroke-width": 1.6 }, g);
+  mk("line", { x1: cx - 10, y1: cy + 4, x2: cx + 10, y2: cy + 4, stroke: "#fff", "stroke-width": 1.6, "stroke-linecap": "round" }, g);
+  const u = mk("rect", { x: cx - 24, y: cy + 26, width: 48, height: 4, rx: 2, fill: "#fff", opacity: 0 }, g);
+  segs.push({ f, u });
+}
+mk("circle", { r: 34, fill: "none", stroke: css("--accent"), "stroke-width": 12 }, W);
+
+// shards for the hook (same 8 segments, flying)
+const S = $("shards"), shards = [];
+for (let i = 0; i < N; i++) { const a0 = (i / N) * Math.PI * 2 - Math.PI / 2; shards.push(mk("path", { d: arc(40, 262, a0, a0 + Math.PI * 2 / N - 0.02), fill: i % 3 ? css("--ink") : css("--panel"), stroke: css("--line") }, S)); }
+
+// carousel cards
+const CARDS = [["Blur swap", "Outgoing blurs to 40 px; incoming sharpens from 20."], ["Masked reveal", "Words rise from behind a mask, staggered."], ["Digit roll", "Each digit rolls in its own column."], ["Shatter", "Seeded shards, shockwave ring, flash."], ["Carousel", "Perspective 1600 px, sides at 25 degrees."]];
+const C = $("carousel"), cards = CARDS.map(([h, p]) => { const d = document.createElement("div"); d.className = "card"; d.innerHTML = `<div class="bar"><i></i><i></i><i></i></div><div class="body">${h}<p>${p}</p></div><div class="key">space  play / pause</div>`; C.appendChild(d); return d; });
+
+function render(t) {
+  // ---- worlds: blue (0-6.6, 9.6-12), light (6.6-9.6) via blur cross-dissolve
+  const light = Math.min(ease.entrance(prog(t, 6.45, 0.45)), 1 - ease.inCubic(prog(t, 9.45, 0.35)));
+  $("light").style.opacity = light;
+  $("light").style.filter = `blur(${((1 - light) * 20 * (light > 0 && light < 1)).toFixed(1)}px)`;
+  [["c1", 0], ["c2", 2], ["c3", 4]].forEach(([id, s], i) => { const h = handheld(t * 0.35, 220, 0, s * 10); set($(id), { x: [200, 1000, 600][i] + h.x, y: [-200, 300, 600][i] + h.y, s: 1 + 0.08 * Math.sin(t * 0.4 + i) }); });
+
+  // ---- hook: wheel shatters at SHATTER, ring + flash, new wheel springs 0.6 -> 1
+  const pre = t < SHATTER;
+  shards.forEach((p, i) => { const s = shatter(t, SHATTER, N, { seed: 11, speed: 1100 })[i];
+    p.setAttribute("transform", pre ? "" : `translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${s.r.toFixed(1)}) scale(${s.s.toFixed(3)})`);
+    p.style.opacity = pre ? 1 : s.o; p.style.filter = pre ? "" : `blur(${s.blur.toFixed(1)}px)`; });
+  S.style.visibility = t < SHATTER + 0.7 ? "visible" : "hidden";
+  const sh = shock(t, SHATTER); const rc = $("ringC"); rc.setAttribute("r", t < SHATTER ? 0 : sh.r.toFixed(1)); rc.setAttribute("stroke-width", sh.w.toFixed(2)); rc.style.opacity = t < SHATTER ? 0 : sh.o;
+  $("flash").style.opacity = flash(t, SHATTER + 0.04, { max: 0.7 });
+
+  // wheel: springs in after the shatter, slides left for the counter, blur-swaps out at 4.0
+  const sp = spring(t - SHATTER - 0.05, springs.overshoot3), wOut = blurSwap(t, SHATTER + 0.05, 4.0, { inn: 0.4 });
+  const slide = ease.inOutCubic(prog(t, 1.25, 0.7));
+  set($("wheelWrap"), { x: -260 * slide, s: t < SHATTER ? 0 : mix(0.6, 1, sp), o: t < SHATTER ? 0 : wOut.o, blur: wOut.blur + (1 - clamp(sp * 1.4)) * 10 });
+  // selection jumps every 0.7 s from 1.5 s; arc fill eases, underline grows
+  const step = Math.floor((t - 1.5) / 0.7), sel = t < 1.5 ? -1 : (step * 3) % N;
+  segs.forEach((g, i) => { const on = i === sel ? ease.outQuart(prog(t, 1.5 + step * 0.7, 0.18)) : 0; g.f.setAttribute("opacity", on); g.u.setAttribute("opacity", on); });
+
+  // ---- counter: digits roll to the next value on each jump (40 ms stagger)
+  const cw = blurSwap(t, 1.45, 4.0);
+  set($("counterWrap"), { o: cw.o, blur: cw.blur, y: (1 - ease.entrance(prog(t, 1.45, 0.5))) * 40 });
+  const n = clamp(step + 1, 0, 16), chAt = 1.5 + step * 0.7;
+  rollDigits($("digits"), t < 1.5 ? 0 : n * 2 % 17, t, chAt, { from: t < 1.5 ? 0 : Math.max(0, n - 1) * 2 % 17 });
+
+  // ---- title: masked word reveal, underline draws left to right, everything behind blurs
+  const tw = blurSwap(t, 4.05, 6.35, { inn: 0.2 });
+  set($("titleWrap"), { o: tw.o, blur: Math.min(tw.blur, 40) });
+  revealWords($("title1"), t, 4.1, { out: 6.2 }); revealWords($("title2"), t, 4.35, { out: 6.25 });
+  $("uline").style.transform = `scaleX(${(ease.inOutCubic(prog(t, 4.75, 0.6)) - ease.inCubic(prog(t, 6.2, 0.25))).toFixed(4)})`;
+  $("uline").style.transformOrigin = t < 6.2 ? "0 50%" : "100% 50%";
+
+  // ---- carousel (light world): one card per 0.55 s, sides at 25 deg with 6 px blur
+  const cv = blurSwap(t, 6.55, 9.45, { inn: 0.45 });
+  C.style.opacity = cv.o; C.style.filter = cv.blur ? `blur(${cv.blur.toFixed(1)}px)` : "";
+  const pos = key(t, [[6.8, 0], [7.4, 1, ease.inOutQuart], [7.95, 1], [8.5, 2, ease.inOutQuart], [9.0, 2], [9.5, 3, ease.inOutQuart]]);
+  cards.forEach((c, i) => { const s = carousel(i - pos); set(c, { x: s.x, z: s.z, ry: s.ry, o: s.o * cv.o, blur: s.blur }); c.style.zIndex = 10 - Math.round(Math.abs(i - pos) * 2); });
+  // label swaps with a masked vertical roll
+  const L = $("label"), li = Math.round(pos);
+  if (L.dataset.i !== String(li)) { L.dataset.i = li; L.textContent = CARDS[li][0]; L._words = null; }
+  revealWords(L, t, [6.7, 7.25, 8.35, 9.35][li] ?? 6.7, { out: [7.15, 8.25, 9.25, 99][li], dur: 0.4, stagger: 0.04 });
+  set($("labelWrap"), { o: cv.o });
+
+  // ---- end card: logo spring pop, title + tag masked, pill rises, settle to 60% before loop
+  const ew = blurSwap(t, 9.5, DUR + 1, { inn: 0.4 }), fade = 1 - 0.4 * ease.inOutCubic(prog(t, 11.4, 0.6));
+  set($("endWrap"), { o: ew.o * fade, blur: ew.blur });
+  set($("logo"), { s: spring(t - 9.6, springs.bouncy), r: (1 - spring(t - 9.6, springs.gentle)) * -40 });
+  revealWords($("endTitle"), t, 9.85); revealWords($("endTag"), t, 10.1, { stagger: 0.04 });
+  set($("pill"), { y: (1 - ease.entrance(prog(t, 10.4, 0.6))) * 60, o: ease.outCubic(prog(t, 10.4, 0.4)) });
+
+  // ---- grain: re-seed at 24 fps
+  $("turb").setAttribute("seed", grainSeed(t));
+}
+K.boot(render, DUR);
+</script></body></html>
