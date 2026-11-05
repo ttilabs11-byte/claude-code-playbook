@@ -74,7 +74,7 @@ Ranked by gain for effort.
 
 - Changelog after 2.1.316.
 - Results of #3 (cold returns) decide #10 and whether to add a "compact before you step away" rule.
-- TokenEconomizer verdict 2026-11-08.
+- ~~TokenEconomizer verdict 2026-11-08~~ Done 2026-11-05: removed (see Installs and tool scout).
 
 ## Round 8 (2026-11-02, Claude Code 2.1.316)
 
@@ -138,7 +138,7 @@ Skipped without a row: magpie (routes Claude Code to other vendors' models: send
 - Changelog entries after 2.1.316 (two weeks without a release; expect a large batch, check breaking changes first).
 - Settings reference from offset 200000: exact `idleCompaction` entry (type, default) and `skillListingBudgetFraction`
   default, to recheck round 5's numbers.
-- TokenEconomizer verdict (task `tokeneconomizer-week-check`, 2026-11-08); then decide on optimaizr.
+- ~~TokenEconomizer verdict~~ Done 2026-11-05: removed; task `tokeneconomizer-week-check` paused. Decide on optimaizr on its own merits.
 - Recheck blender-skills and floorplan (issues, commits) if the user hasn't tried them.
 
 ## Compaction window for the app project (2026-11-02)
@@ -194,6 +194,7 @@ User asked for both installs.
   It officially supports 2.1.300–2.1.310; status and `toolprune refresh-catalog` (46 tools) work on 2.1.316.
   CLI: `CLAUDE_PLUGIN_ROOT=".../TokenEconomizer/plugin" sh ".../plugin/scripts/te" --host claude --cwd "$(pwd)" status`
   (`~/.tokeneconomizer/bin/te` is not created). Tool pruning writes deny rules to `.claude/settings.local.json`.
+  **Removed 2026-11-05** (superseded): Tried 2026-10-31 to 2026-11-05, removed. Cache hit rate did not move (98.1% before, 97.7% after; the waste is idle wake-ups and compaction, which it does not touch). It reported zero measured savings; its learned facts injected nothing; its loop guard fired 5 times in 6 days, all on long turns, never on a real loop. Its tool pruning wrote up to 192 deny rules per folder and hid tools sessions need (session messaging, PushNotification, scheduled tasks, Chrome, Artifacts), and its state writes failed on Windows (WinError 5). Undo of its pruning: `te --host claude toolprune restore --cwd <folder>` in each pruned folder, then remove the plugin and its marketplace entry.
 - **feature-dev@claude-plugins-official** (Anthropic): `/feature-dev` runs 7 phases (discovery, codebase exploration,
   clarifying questions, architecture, implementation, quality review, summary) with code-explorer, code-architect and
   code-reviewer subagents. Those subagents run only when `/feature-dev` is invoked, and the cap of 2 at once still applies.

@@ -724,7 +724,7 @@
         "url": "https://github.com/microsoft/TokenEconomizer",
         "licence": "Apache-2.0",
         "stars": 4544,
-        "verdict": "per-need",
+        "verdict": "dropped",
         "detect": {
           "plugin": "tokeneconomizer"
         },
@@ -732,7 +732,7 @@
         "replacedBy": []
       },
       "what": "Learns from past runs to prune tools a repo never uses and nudge on loops.",
-      "why": "On trial since 2026-10-31; verdict against cache-report numbers due 2026-11-08. Its tool pruning writes deny rules into .claude/settings.local.json.",
+      "why": "Tried 2026-10-31 to 2026-11-05, removed. Cache hit rate did not move (98.1% before, 97.7% after; the waste is idle wake-ups and compaction, which it does not touch). It reported zero measured savings; its learned facts injected nothing; its loop guard fired 5 times in 6 days, all on long turns, never on a real loop. Its tool pruning wrote up to 192 deny rules per folder and hid tools sessions need (session messaging, PushNotification, scheduled tasks, Chrome, Artifacts), and its state writes failed on Windows (WinError 5).",
       "parts": {}
     },
     {
